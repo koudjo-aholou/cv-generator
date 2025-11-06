@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn CV Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Générateur de CV LinkedIn</h1>
+            <p class="subtitle">Transformez votre profil LinkedIn en CV professionnel</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Instructions -->
+            <section id="instructions" class="card">
+                <h2>📋 Comment ça marche ?</h2>
+                <ol>
+                    <li>
+                        <strong>Exportez vos données LinkedIn :</strong>
+                        <ul>
+                            <li>Allez sur LinkedIn → <em>Paramètres et confidentialité</em></li>
+                            <li>Cliquez sur <em>Confidentialité des données</em></li>
+                            <li>Sélectionnez <em>Obtenir une copie de vos données</em></li>
+                            <li>Choisissez les données à exporter (Profil, Postes, Formation, etc.)</li>
+                            <li>Téléchargez le fichier ZIP et extrayez-le</li>
+                        </ul>
+                    </li>
+                    <li><strong>Téléversez les fichiers CSV</strong> ci-dessous</li>
+                    <li><strong>Téléchargez votre CV</strong> en PDF</li>
+                </ol>
+                <div class="info-box">
+                    <strong>🔒 Confidentialité :</strong> Toutes les données sont traitées localement.
+                    Aucune information n'est sauvegardée sur un serveur.
+                </div>
+            </section>
+
+            <!-- Step 2: File Upload -->
+            <section id="upload-section" class="card">
+                <h2>📤 Téléverser vos fichiers LinkedIn</h2>
+                <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
+
+                <div class="drop-zone" id="dropZone">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Glissez-déposez vos fichiers ici</p>
+                    <p class="or-text">ou</p>
+                    <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">
+                        Parcourir les fichiers
+                    </button>
+                    <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
+                </div>
+
+                <div id="fileList" class="file-list"></div>
+
+                <button id="parseBtn" class="btn-primary" style="display: none;">
+                    Analyser les données
+                </button>
+            </section>
+
+            <!-- Step 3: Preview and Generate -->
+            <section id="preview-section" class="card" style="display: none;">
+                <h2>👤 Aperçu de vos données</h2>
+                <div id="dataPreview"></div>
+
+                <div class="action-buttons">
+                    <button id="generateBtn" class="btn-primary">
+                        Générer le CV en PDF
+                    </button>
+                    <button id="resetBtn" class="btn-secondary">
+                        Recommencer
+                    </button>
+                </div>
+            </section>
+
+            <!-- Loading spinner -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Traitement en cours...</p>
+            </div>
+
+            <!-- Error message -->
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </main>
+
+        <footer>
+            <p>Développé avec ❤️ | Vos données restent privées et locales</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
