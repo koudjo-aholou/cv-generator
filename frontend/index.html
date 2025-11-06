@@ -68,6 +68,32 @@
                 <h2>👤 Aperçu de vos données</h2>
                 <div id="dataPreview"></div>
 
+                <!-- Photo Upload Section -->
+                <div class="photo-upload-section">
+                    <h3>📷 Photo de profil (optionnel)</h3>
+                    <p class="help-text">Ajoutez une photo pour personnaliser votre CV</p>
+
+                    <div class="photo-upload-container">
+                        <div class="photo-preview" id="photoPreview">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <img id="photoPreviewImg" style="display: none;" alt="Photo de profil">
+                        </div>
+                        <div class="photo-upload-actions">
+                            <input type="file" id="photoInput" accept="image/jpeg,image/jpg,image/png" style="display: none;">
+                            <button id="uploadPhotoBtn" class="btn-secondary">
+                                Choisir une photo
+                            </button>
+                            <button id="removePhotoBtn" class="btn-secondary" style="display: none;">
+                                Retirer la photo
+                            </button>
+                            <p class="photo-info">JPG ou PNG, max 5MB</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="action-buttons">
                     <button id="generateBtn" class="btn-primary">
                         Générer le CV en PDF

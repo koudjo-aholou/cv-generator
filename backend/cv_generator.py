@@ -1,13 +1,15 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm, mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak, HRFlowable, Image
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 import tempfile
+import base64
+from io import BytesIO
 
 class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
@@ -202,40 +204,113 @@ class CVGenerator:
         return elements
 
     def _build_header(self):
-        """Build header section with name and contact info"""
+        """Build header section with name, contact info, and photo"""
         elements = []
         profile = self.data.get('profile', {})
 
-        # Full name
-        full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
-        if full_name:
-            elements.append(Paragraph(full_name, self.styles['Name']))
+        # Check if we have a photo
+        has_photo = self.data.get('photo') is not None
 
-        # Headline
-        if profile.get('headline'):
-            elements.append(Paragraph(profile['headline'], self.styles['Headline']))
+        if has_photo:
+            # Build header with photo using table layout
+            info_elements = []
 
-        # Contact info on multiple lines for better readability
-        contact_lines = []
+            # Full name
+            full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
+            if full_name:
+                info_elements.append(Paragraph(full_name, self.styles['Name']))
 
-        line1_parts = []
-        if profile.get('email'):
-            line1_parts.append(f"✉ {profile['email']}")
-        if profile.get('phone'):
-            line1_parts.append(f"☎ {profile['phone']}")
+            # Headline
+            if profile.get('headline'):
+                info_elements.append(Paragraph(profile['headline'], self.styles['Headline']))
 
-        if line1_parts:
-            contact_lines.append(' • '.join(line1_parts))
+            # Contact info
+            contact_lines = []
 
-        if profile.get('address'):
-            contact_lines.append(f"📍 {profile['address']}")
+            line1_parts = []
+            if profile.get('email'):
+                line1_parts.append(f"✉ {profile['email']}")
+            if profile.get('phone'):
+                line1_parts.append(f"☎ {profile['phone']}")
 
-        for line in contact_lines:
-            elements.append(Paragraph(line, self.styles['Contact']))
+            if line1_parts:
+                contact_lines.append(' • '.join(line1_parts))
+
+            if profile.get('address'):
+                contact_lines.append(f"📍 {profile['address']}")
+
+            for line in contact_lines:
+                info_elements.append(Paragraph(line, self.styles['Contact']))
+
+            # Create photo image
+            photo_img = self._create_photo_image()
+
+            # Create table with info on left and photo on right
+            header_table = Table([[info_elements, photo_img]], colWidths=[130*mm, 40*mm])
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ]))
+
+            elements.append(header_table)
+
+        else:
+            # Build header without photo (original layout)
+            # Full name
+            full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
+            if full_name:
+                elements.append(Paragraph(full_name, self.styles['Name']))
+
+            # Headline
+            if profile.get('headline'):
+                elements.append(Paragraph(profile['headline'], self.styles['Headline']))
+
+            # Contact info on multiple lines for better readability
+            contact_lines = []
+
+            line1_parts = []
+            if profile.get('email'):
+                line1_parts.append(f"✉ {profile['email']}")
+            if profile.get('phone'):
+                line1_parts.append(f"☎ {profile['phone']}")
+
+            if line1_parts:
+                contact_lines.append(' • '.join(line1_parts))
+
+            if profile.get('address'):
+                contact_lines.append(f"📍 {profile['address']}")
+
+            for line in contact_lines:
+                elements.append(Paragraph(line, self.styles['Contact']))
 
         elements.append(Spacer(1, 4*mm))
 
         return elements
+
+    def _create_photo_image(self):
+        """Create photo image from base64 data"""
+        try:
+            photo_data = self.data.get('photo', '')
+
+            # Remove data URL prefix if present
+            if 'base64,' in photo_data:
+                photo_data = photo_data.split('base64,')[1]
+
+            # Decode base64
+            image_data = base64.b64decode(photo_data)
+
+            # Create image from bytes
+            img = Image(BytesIO(image_data), width=35*mm, height=35*mm)
+
+            return img
+
+        except Exception as e:
+            print(f"Error loading photo: {e}")
+            return Paragraph("", self.styles['Normal'])
 
     def _build_summary(self):
         """Build summary/about section"""

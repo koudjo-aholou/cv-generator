@@ -4,6 +4,7 @@ const API_URL = 'http://localhost:5000';
 // State
 let selectedFiles = [];
 let parsedData = null;
+let photoFile = null;
 
 // DOM Elements
 const dropZone = document.getElementById('dropZone');
@@ -17,6 +18,11 @@ const generateBtn = document.getElementById('generateBtn');
 const resetBtn = document.getElementById('resetBtn');
 const loading = document.getElementById('loading');
 const errorMessage = document.getElementById('errorMessage');
+const photoInput = document.getElementById('photoInput');
+const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+const removePhotoBtn = document.getElementById('removePhotoBtn');
+const photoPreview = document.getElementById('photoPreview');
+const photoPreviewImg = document.getElementById('photoPreviewImg');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -50,6 +56,11 @@ function setupEventListeners() {
     parseBtn.addEventListener('click', parseLinkedInData);
     generateBtn.addEventListener('click', generatePDF);
     resetBtn.addEventListener('click', resetApp);
+
+    // Photo upload events
+    uploadPhotoBtn.addEventListener('click', () => photoInput.click());
+    photoInput.addEventListener('change', handlePhotoUpload);
+    removePhotoBtn.addEventListener('click', removePhoto);
 }
 
 // Drag and Drop Handlers
@@ -260,6 +271,48 @@ function displayPreview(data) {
     dataPreview.innerHTML = html || '<p>Aucune donnée trouvée dans les fichiers.</p>';
 }
 
+// Photo Upload Handlers
+function handlePhotoUpload(e) {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match('image/(jpeg|jpg|png)')) {
+        showError('Format non supporté. Utilisez JPG ou PNG.');
+        return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+        showError('La photo est trop grande. Maximum 5MB.');
+        return;
+    }
+
+    photoFile = file;
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        photoPreviewImg.src = e.target.result;
+        photoPreviewImg.style.display = 'block';
+        photoPreview.querySelector('svg').style.display = 'none';
+        removePhotoBtn.style.display = 'inline-block';
+    };
+    reader.readAsDataURL(file);
+
+    hideError();
+}
+
+function removePhoto() {
+    photoFile = null;
+    photoInput.value = '';
+    photoPreviewImg.style.display = 'none';
+    photoPreviewImg.src = '';
+    photoPreview.querySelector('svg').style.display = 'block';
+    removePhotoBtn.style.display = 'none';
+}
+
 // Generate PDF
 async function generatePDF() {
     if (!parsedData) {
@@ -271,12 +324,21 @@ async function generatePDF() {
     hideError();
 
     try {
+        // Prepare data with photo if available
+        const dataToSend = { ...parsedData };
+
+        // Add photo if uploaded
+        if (photoFile) {
+            const photoBase64 = await fileToBase64(photoFile);
+            dataToSend.photo = photoBase64;
+        }
+
         const response = await fetch(`${API_URL}/api/generate-pdf`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(parsedData)
+            body: JSON.stringify(dataToSend)
         });
 
         if (!response.ok) {
@@ -311,10 +373,21 @@ function resetApp() {
     fileInput.value = '';
     parseBtn.style.display = 'none';
     previewSection.style.display = 'none';
+    removePhoto();
     hideError();
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Helper function to convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 // UI Helper Functions
