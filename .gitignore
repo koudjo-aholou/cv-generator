@@ -29,6 +29,7 @@ Thumbs.db
 # Temporary files
 *.pdf
 *.csv
+!mock/*.csv
 /tmp/
 /temp/
 
