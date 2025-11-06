@@ -24,6 +24,21 @@ Application web simple pour générer un CV professionnel à partir de votre exp
 - pip (gestionnaire de packages Python)
 - Un navigateur web moderne
 
+## 🔒 Sécurité
+
+Cette application a été durcie contre les vulnérabilités courantes :
+
+- ✅ **Protection Path Traversal** - Noms de fichiers sécurisés avec UUID
+- ✅ **Validation des Uploads** - Taille et type de fichier vérifiés
+- ✅ **Debug Mode Désactivé** - Par défaut en mode production
+- ✅ **CORS Restreint** - Accès localhost uniquement
+- ✅ **Nettoyage Garanti** - Fichiers temporaires toujours supprimés
+- ✅ **Logging Sécurisé** - Pas de données sensibles dans les logs clients
+
+**⚠️ Important** : Cette application est conçue pour un **usage local uniquement**. Ne l'exposez pas sur internet sans protections supplémentaires (reverse proxy, HTTPS, authentification).
+
+Consultez [SECURITY.md](SECURITY.md) pour plus de détails sur la sécurité.
+
 ## 🚀 Installation
 
 ### 1. Cloner le projet
