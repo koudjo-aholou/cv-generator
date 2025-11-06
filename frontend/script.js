@@ -301,8 +301,14 @@ async function parseDataForStep2() {
         }
 
         parsedData = await response.json();
+
+        // Initialize config based on parsed data
+        initializeConfig();
+
+        // Populate configuration UI
+        populateConfigUI();
+
         hideLoading();
-        populateConfigurationPanel();
     } catch (error) {
         hideLoading();
         showError('Erreur lors du parsing des données: ' + error.message);
