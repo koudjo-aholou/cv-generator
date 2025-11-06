@@ -147,38 +147,65 @@ class LinkedInParser:
             print(f"Error parsing certifications: {e}")
 
     def _parse_email_addresses(self, filepath):
-        """Parse Email Addresses.csv"""
+        """Parse Email Addresses.csv
+        Format: Email Address,Confirmed,Primary,Updated On
+        Example: ah.kouxxx@gmail.com,Yes,Yes,"4/9/18, 2:05 AM"
+        """
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 emails = []
+                primary_email = None
+
                 for row in reader:
-                    email = row.get('Email Address', '')
+                    email = row.get('Email Address', '').strip()
                     if email:
+                        # Prioritize primary email
+                        if row.get('Primary', '').lower() == 'yes':
+                            primary_email = email
                         emails.append(email)
 
-                # Use the first email if profile doesn't have one
-                if emails and not self.data['profile'].get('email'):
-                    self.data['profile']['email'] = emails[0]
+                # Use primary email first, otherwise first email
+                if not self.data['profile'].get('email'):
+                    if primary_email:
+                        self.data['profile']['email'] = primary_email
+                    elif emails:
+                        self.data['profile']['email'] = emails[0]
 
         except Exception as e:
             print(f"Error parsing email addresses: {e}")
 
     def _parse_phone_numbers(self, filepath):
-        """Parse PhoneNumbers.csv and Whatsapp Phone Numbers.csv"""
+        """Parse PhoneNumbers.csv and Whatsapp Phone Numbers.csv
+        Format: Extension,Number,Type
+        Example: , +33 6 00 00 06 02,
+                 ,06*********,Mobile
+        """
         try:
             with open(filepath, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 phones = []
+                mobile_phone = None
+
                 for row in reader:
                     # Try different possible column names
-                    phone = row.get('Phone Number', '') or row.get('PhoneNumber', '') or row.get('Number', '')
-                    if phone:
+                    phone = row.get('Number', '') or row.get('Phone Number', '') or row.get('PhoneNumber', '')
+                    phone = phone.strip()
+
+                    # Skip empty lines and masked numbers (with asterisks)
+                    if phone and '*' not in phone:
+                        # Prioritize mobile phone
+                        phone_type = row.get('Type', '').strip().lower()
+                        if phone_type == 'mobile':
+                            mobile_phone = phone
                         phones.append(phone)
 
-                # Use the first phone number if profile doesn't have one
-                if phones and not self.data['profile'].get('phone'):
-                    self.data['profile']['phone'] = phones[0]
+                # Use mobile phone first, otherwise first phone
+                if not self.data['profile'].get('phone'):
+                    if mobile_phone:
+                        self.data['profile']['phone'] = mobile_phone
+                    elif phones:
+                        self.data['profile']['phone'] = phones[0]
 
         except Exception as e:
             print(f"Error parsing phone numbers: {e}")
