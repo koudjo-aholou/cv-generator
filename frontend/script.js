@@ -228,21 +228,22 @@ function goToStep(stepNumber) {
     }
 }
 
-function goToNextStep(fromStep) {
+async function goToNextStep(fromStep) {
     // Validate current step
-    if (!validateStep(fromStep)) {
+    const isValid = await validateStep(fromStep);
+    if (!isValid) {
         return;
     }
 
     // Special handling for step 2 -> 3: generate preview
     if (fromStep === 2) {
-        generatePreviewForStep3();
+        await generatePreviewForStep3();
     }
 
     goToStep(fromStep + 1);
 }
 
-function validateStep(stepNumber) {
+async function validateStep(stepNumber) {
     if (stepNumber === 1) {
         // Check if required CSV files are uploaded
         const requiredFiles = ['Profile.csv', 'Positions.csv', 'Education.csv'];
@@ -259,7 +260,13 @@ function validateStep(stepNumber) {
 
         // Parse data if not already done
         if (!parsedData) {
-            parseDataForStep2();
+            try {
+                await parseDataForStep2();
+                return true;
+            } catch (error) {
+                // Error already displayed by parseDataForStep2
+                return false;
+            }
         }
 
         return true;
@@ -386,7 +393,6 @@ function removeFile(index) {
 
     if (selectedFiles.length === 0) {
         fileList.innerHTML = '';
-        photoSection.style.display = 'none';
     } else {
         displayFileList();
     }
@@ -456,11 +462,6 @@ async function generateCV() {
 
         // Populate configuration UI
         populateConfigUI();
-
-        // Hide photo section and show preview section
-        photoSection.style.display = 'none';
-        previewSection.style.display = 'block';
-        previewSection.scrollIntoView({ behavior: 'smooth' });
 
         // Generate initial preview
         await generatePreview();
@@ -1720,8 +1721,7 @@ function downloadFinalPDF() {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    // Show success
-    previewSection.style.display = 'none';
+    // Show success message
     successSection.style.display = 'block';
     successSection.scrollIntoView({ behavior: 'smooth' });
 }
