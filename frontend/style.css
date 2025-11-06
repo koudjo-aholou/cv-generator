@@ -462,8 +462,8 @@ footer {
 
 /* Contact Fields */
 .contact-fields {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
 }
 
@@ -483,9 +483,10 @@ footer {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     background: white;
     transition: border-color 0.2s;
+    width: 100%;
 }
 
 .form-group input:focus {
@@ -663,6 +664,10 @@ footer {
     .preview-frame-container {
         min-height: 600px;
     }
+
+    .contact-fields {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -732,5 +737,9 @@ footer {
 
     .section-order-item {
         padding: 0.5rem;
+    }
+
+    .contact-fields {
+        grid-template-columns: 1fr;
     }
 }
