@@ -43,6 +43,26 @@
                 <h2>📤 Téléverser vos fichiers LinkedIn</h2>
                 <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
 
+                <div class="required-files-info">
+                    <h3>📁 Fichiers CSV nécessaires :</h3>
+                    <div class="files-grid">
+                        <div class="file-badge required">📄 Profile.csv</div>
+                        <div class="file-badge required">📄 Positions.csv</div>
+                        <div class="file-badge required">📄 Education.csv</div>
+                        <div class="file-badge optional">📄 Skills.csv</div>
+                        <div class="file-badge optional">📄 Languages.csv</div>
+                        <div class="file-badge optional">📄 Certifications.csv</div>
+                        <div class="file-badge optional">📄 Email Addresses.csv</div>
+                        <div class="file-badge optional">📄 PhoneNumbers.csv</div>
+                        <div class="file-badge optional">📄 Whatsapp Phone Numbers.csv</div>
+                    </div>
+                    <p class="files-note">
+                        <span class="required-badge">●</span> <strong>Requis</strong> : Fichiers essentiels pour générer votre CV
+                        <br>
+                        <span class="optional-badge">●</span> <strong>Optionnels</strong> : Fichiers pour enrichir votre CV
+                    </p>
+                </div>
+
                 <div class="drop-zone" id="dropZone">
                     <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -88,6 +108,114 @@
                 <button id="generateBtn" class="btn-primary">
                     📄 Générer mon CV en PDF
                 </button>
+            </section>
+
+            <!-- Preview and Configuration Section -->
+            <section id="preview-section" class="card" style="display: none;">
+                <h2>🎨 Personnalisez votre CV</h2>
+                <p class="help-text">Configurez les sections à inclure et visualisez le résultat en temps réel</p>
+
+                <div class="preview-container">
+                    <!-- Configuration Panel -->
+                    <div class="config-panel">
+                        <div class="config-section">
+                            <h3>📧 Informations de contact</h3>
+                            <p class="config-help">Modifiez vos coordonnées si nécessaire</p>
+                            <div class="contact-fields">
+                                <div class="form-group">
+                                    <label for="contact-email">Email</label>
+                                    <input type="email" id="contact-email" placeholder="votre.email@exemple.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-phone">Téléphone</label>
+                                    <input type="tel" id="contact-phone" placeholder="+33 6 12 34 56 78">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-address">Adresse</label>
+                                    <input type="text" id="contact-address" placeholder="Ville, Pays">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>📋 Sections du CV</h3>
+                            <p class="config-help">Cochez les sections à inclure dans votre CV</p>
+                            <div class="section-toggles">
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-summary" checked>
+                                    <span>À Propos</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-experience" checked>
+                                    <span>Expérience Professionnelle</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-education" checked>
+                                    <span>Formation</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-skills" checked>
+                                    <span>Compétences</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-languages" checked>
+                                    <span>Langues</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-certifications" checked>
+                                    <span>Certifications</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>🔄 Ordre des sections</h3>
+                            <p class="config-help">Faites glisser pour réorganiser</p>
+                            <div id="section-order" class="section-order-list">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="config-section" id="experience-items-section">
+                            <h3>💼 Expériences à inclure</h3>
+                            <p class="config-help">Sélectionnez les expériences à afficher</p>
+                            <div id="experience-items" class="item-toggles">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="config-section" id="education-items-section">
+                            <h3>🎓 Formations à inclure</h3>
+                            <p class="config-help">Sélectionnez les formations à afficher</p>
+                            <div id="education-items" class="item-toggles">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="config-actions">
+                            <button id="refreshPreviewBtn" class="btn-secondary">
+                                🔄 Rafraîchir l'aperçu
+                            </button>
+                            <button id="downloadFinalBtn" class="btn-primary">
+                                📥 Télécharger le CV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PDF Preview -->
+                    <div class="pdf-preview">
+                        <div class="preview-header">
+                            <h3>Aperçu du CV</h3>
+                        </div>
+                        <div class="preview-frame-container">
+                            <iframe id="pdfPreviewFrame" title="Aperçu du CV"></iframe>
+                            <div id="previewLoading" class="preview-loading" style="display: none;">
+                                <div class="spinner"></div>
+                                <p>Génération de l'aperçu...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <!-- Success message -->

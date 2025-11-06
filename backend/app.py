@@ -186,8 +186,11 @@ def generate_pdf():
             except Exception:
                 return jsonify({"error": "Invalid photo data"}), 400
 
-        # Generate PDF
-        generator = CVGenerator(data)
+        # Extract config if provided
+        config = data.pop('config', None) if 'config' in data else None
+
+        # Generate PDF with config
+        generator = CVGenerator(data, config=config)
         pdf_path = generator.generate()
 
         logger.info("PDF generated successfully")

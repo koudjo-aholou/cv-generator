@@ -33,6 +33,10 @@ class LinkedInParser:
                 self._parse_languages(filepath)
             elif 'certification' in filename:
                 self._parse_certifications(filepath)
+            elif 'email' in filename:
+                self._parse_email_addresses(filepath)
+            elif 'phone' in filename:
+                self._parse_phone_numbers(filepath)
 
         return self.data
 
@@ -141,6 +145,70 @@ class LinkedInParser:
                     self.data['certifications'].append(cert)
         except Exception as e:
             print(f"Error parsing certifications: {e}")
+
+    def _parse_email_addresses(self, filepath):
+        """Parse Email Addresses.csv
+        Format: Email Address,Confirmed,Primary,Updated On
+        Example: ah.kouxxx@gmail.com,Yes,Yes,"4/9/18, 2:05 AM"
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                emails = []
+                primary_email = None
+
+                for row in reader:
+                    email = row.get('Email Address', '').strip()
+                    if email:
+                        # Prioritize primary email
+                        if row.get('Primary', '').lower() == 'yes':
+                            primary_email = email
+                        emails.append(email)
+
+                # Use primary email first, otherwise first email
+                if not self.data['profile'].get('email'):
+                    if primary_email:
+                        self.data['profile']['email'] = primary_email
+                    elif emails:
+                        self.data['profile']['email'] = emails[0]
+
+        except Exception as e:
+            print(f"Error parsing email addresses: {e}")
+
+    def _parse_phone_numbers(self, filepath):
+        """Parse PhoneNumbers.csv and Whatsapp Phone Numbers.csv
+        Format: Extension,Number,Type
+        Example: , +33 6 00 00 06 02,
+                 ,06*********,Mobile
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                phones = []
+                mobile_phone = None
+
+                for row in reader:
+                    # Try different possible column names
+                    phone = row.get('Number', '') or row.get('Phone Number', '') or row.get('PhoneNumber', '')
+                    phone = phone.strip()
+
+                    # Skip empty lines and masked numbers (with asterisks)
+                    if phone and '*' not in phone:
+                        # Prioritize mobile phone
+                        phone_type = row.get('Type', '').strip().lower()
+                        if phone_type == 'mobile':
+                            mobile_phone = phone
+                        phones.append(phone)
+
+                # Use mobile phone first, otherwise first phone
+                if not self.data['profile'].get('phone'):
+                    if mobile_phone:
+                        self.data['profile']['phone'] = mobile_phone
+                    elif phones:
+                        self.data['profile']['phone'] = phones[0]
+
+        except Exception as e:
+            print(f"Error parsing phone numbers: {e}")
 
     def _format_date_range(self, start_date, end_date):
         """Format date range for display (e.g., '2020-01-01 - 2023-12-31' or '2020-01-01 - Présent')"""

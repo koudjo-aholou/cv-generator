@@ -16,8 +16,9 @@ from PIL import Image as PILImage
 class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
 
-    def __init__(self, data):
-        self.data = self._clean_emoji_from_data(data)
+    def __init__(self, data, config=None):
+        self.data = data
+        self.config = config or {}
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
 
@@ -226,32 +227,41 @@ class CVGenerator:
         # Build content
         story = []
 
-        # Header section
+        # Header section (always included)
         story.extend(self._build_header())
 
-        # Summary section
-        if self.data.get('profile', {}).get('summary'):
-            story.extend(self._build_summary())
+        # Get section configuration
+        sections_config = self.config.get('sections', {})
+        section_order = self.config.get('section_order', [
+            'summary', 'experience', 'education', 'skills', 'languages', 'certifications'
+        ])
 
-        # Experience section
-        if self.data.get('positions'):
-            story.extend(self._build_experience())
+        # Section builders mapping
+        section_builders = {
+            'summary': self._build_summary,
+            'experience': self._build_experience,
+            'education': self._build_education,
+            'skills': self._build_skills,
+            'languages': self._build_languages,
+            'certifications': self._build_certifications
+        }
 
-        # Education section
-        if self.data.get('education'):
-            story.extend(self._build_education())
+        # Build sections in configured order
+        for section_name in section_order:
+            # Check if section is enabled (default to True if not specified)
+            is_enabled = sections_config.get(section_name, True)
 
-        # Skills section
-        if self.data.get('skills'):
-            story.extend(self._build_skills())
+            if is_enabled and section_name in section_builders:
+                # Check if section has data
+                has_data = False
+                if section_name == 'summary':
+                    has_data = bool(self.data.get('profile', {}).get('summary'))
+                elif section_name in ['experience', 'education', 'skills', 'languages', 'certifications']:
+                    data_key = 'positions' if section_name == 'experience' else section_name
+                    has_data = bool(self.data.get(data_key))
 
-        # Languages section
-        if self.data.get('languages'):
-            story.extend(self._build_languages())
-
-        # Certifications section
-        if self.data.get('certifications'):
-            story.extend(self._build_certifications())
+                if has_data:
+                    story.extend(section_builders[section_name]())
 
         # Build PDF
         doc.build(story)
@@ -458,7 +468,17 @@ class CVGenerator:
 
         elements.extend(self._create_section_header("Expérience Professionnelle"))
 
-        for i, position in enumerate(self.data.get('positions', [])):
+        # Get visible positions configuration
+        visible_indices = self.config.get('experience_visible')
+        all_positions = self.data.get('positions', [])
+
+        # If visible_indices is specified, filter positions
+        if visible_indices is not None:
+            positions = [all_positions[i] for i in visible_indices if i < len(all_positions)]
+        else:
+            positions = all_positions
+
+        for i, position in enumerate(positions):
             position_elements = []
 
             # Job title
@@ -484,7 +504,7 @@ class CVGenerator:
                 position_elements.append(Paragraph(position['description'], self.styles['Description']))
 
             # Add spacing between positions
-            if i < len(self.data.get('positions', [])) - 1:
+            if i < len(positions) - 1:
                 position_elements.append(Spacer(1, 4*mm))
 
             # Keep each position together
@@ -501,7 +521,17 @@ class CVGenerator:
         # Add section header
         section_content.extend(self._create_section_header("Formation"))
 
-        for i, edu in enumerate(self.data.get('education', [])):
+        # Get visible education configuration
+        visible_indices = self.config.get('education_visible')
+        all_education = self.data.get('education', [])
+
+        # If visible_indices is specified, filter education
+        if visible_indices is not None:
+            education = [all_education[i] for i in visible_indices if i < len(all_education)]
+        else:
+            education = all_education
+
+        for i, edu in enumerate(education):
             edu_elements = []
 
             # Degree
@@ -529,7 +559,7 @@ class CVGenerator:
                 edu_elements.append(Paragraph(' - '.join(date_range), self.styles['DateLocation']))
 
             # Add spacing between education entries
-            if i < len(self.data.get('education', [])) - 1:
+            if i < len(education) - 1:
                 edu_elements.append(Spacer(1, 4*mm))
 
             # Add each education entry to section content
