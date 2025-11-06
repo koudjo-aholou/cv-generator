@@ -38,6 +38,9 @@ class LinkedInParser:
             elif 'phone' in filename:
                 self._parse_phone_numbers(filepath)
 
+        # Clean up duplicate consultant positions after parsing
+        self._merge_consultant_positions()
+
         return self.data
 
     def _parse_profile(self, filepath):
@@ -217,6 +220,115 @@ class LinkedInParser:
 
         except Exception as e:
             print(f"Error parsing phone numbers: {e}")
+
+    def _merge_consultant_positions(self):
+        """
+        Merge duplicate consultant positions (same company, overlapping dates).
+
+        For consultants, LinkedIn often has:
+        - A generic position (e.g., "Zenika, Développeur Js")
+        - Specific missions (e.g., "Zenika, Software Engineer @ Client")
+
+        This function keeps the most detailed position (longest description) and
+        extracts the client name from the title if present (e.g., "@ Aircall").
+        """
+        if not self.data['positions']:
+            return
+
+        # Group positions by company
+        company_groups = {}
+        for i, position in enumerate(self.data['positions']):
+            company = position.get('company', '').strip()
+            if company:
+                if company not in company_groups:
+                    company_groups[company] = []
+                company_groups[company].append((i, position))
+
+        positions_to_remove = set()
+
+        for company, positions_list in company_groups.items():
+            if len(positions_list) < 2:
+                continue  # No duplicates for this company
+
+            # Check for overlapping dates
+            for i in range(len(positions_list)):
+                for j in range(i + 1, len(positions_list)):
+                    idx1, pos1 = positions_list[i]
+                    idx2, pos2 = positions_list[j]
+
+                    if idx1 in positions_to_remove or idx2 in positions_to_remove:
+                        continue
+
+                    # Check if dates overlap
+                    if self._dates_overlap(pos1, pos2):
+                        # Keep the position with the longest description (most detailed)
+                        desc1_len = len(pos1.get('description', ''))
+                        desc2_len = len(pos2.get('description', ''))
+
+                        if desc1_len > desc2_len:
+                            # Keep pos1, remove pos2
+                            positions_to_remove.add(idx2)
+                            # Try to extract client from the kept position's title
+                            client = self._extract_client_name(pos1.get('title', ''))
+                            if not client:
+                                # If not in pos1, try pos2
+                                client = self._extract_client_name(pos2.get('title', ''))
+                            if client:
+                                pos1['client'] = client
+                        else:
+                            # Keep pos2, remove pos1
+                            positions_to_remove.add(idx1)
+                            # Try to extract client from the kept position's title
+                            client = self._extract_client_name(pos2.get('title', ''))
+                            if not client:
+                                # If not in pos2, try pos1
+                                client = self._extract_client_name(pos1.get('title', ''))
+                            if client:
+                                pos2['client'] = client
+
+        # Remove duplicate positions (in reverse order to preserve indices)
+        for idx in sorted(positions_to_remove, reverse=True):
+            del self.data['positions'][idx]
+
+    def _dates_overlap(self, pos1, pos2):
+        """Check if two positions have overlapping dates"""
+        try:
+            start1 = pos1.get('started_on', '')
+            end1 = pos1.get('finished_on', '') or '9999-12-31'  # Present = far future
+            start2 = pos2.get('started_on', '')
+            end2 = pos2.get('finished_on', '') or '9999-12-31'
+
+            if not start1 or not start2:
+                return False
+
+            # Convert to comparable format (assume YYYY-MM-DD or similar)
+            # Simple string comparison works for ISO dates
+            return not (end1 < start2 or end2 < start1)
+        except Exception:
+            return False
+
+    def _extract_client_name(self, title):
+        """
+        Extract client name from title like "Software Engineer @ Aircall"
+        Returns the client name if found, otherwise None
+        """
+        if not title:
+            return None
+
+        # Pattern: "@ ClientName" or "for ClientName" or "chez ClientName"
+        import re
+        patterns = [
+            r'@\s*([A-Z][A-Za-z0-9\s&.-]+?)(?:\s*[-•,]|$)',  # @ Aircall
+            r'for\s+([A-Z][A-Za-z0-9\s&.-]+?)(?:\s*[-•,]|$)',  # for Aircall
+            r'chez\s+([A-Z][A-Za-z0-9\s&.-]+?)(?:\s*[-•,]|$)'  # chez Aircall
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, title)
+            if match:
+                return match.group(1).strip()
+
+        return None
 
     def _format_date_range(self, start_date, end_date):
         """Format date range for display (e.g., '2020-01-01 - 2023-12-31' or '2020-01-01 - Présent')"""

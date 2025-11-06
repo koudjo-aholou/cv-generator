@@ -597,9 +597,13 @@ class CVGenerator:
             if position.get('title'):
                 position_elements.append(Paragraph(position['title'], self.styles['JobTitle']))
 
-            # Company
+            # Company (with client if applicable for consultants)
             if position.get('company'):
-                position_elements.append(Paragraph(position['company'], self.styles['Company']))
+                company_text = position['company']
+                # If a client is specified (e.g., consultant mission), show "Company (pour Client)"
+                if position.get('client'):
+                    company_text = f"{company_text} (pour {position['client']})"
+                position_elements.append(Paragraph(company_text, self.styles['Company']))
 
             # Dates and location
             date_location = []
