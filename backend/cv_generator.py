@@ -20,6 +20,18 @@ class CVGenerator:
         self.data = data
         self.config = config or {}
         self.styles = getSampleStyleSheet()
+
+        # Extract colors from config or use defaults
+        colors_config = self.config.get('colors', {})
+        self.colors = {
+            'primary': colors_config.get('primary', '#3498db'),
+            'text': colors_config.get('text', '#2c3e50'),
+            'secondary_text': colors_config.get('secondary_text', '#7f8c8d')
+        }
+
+        # Extract template from config or use default
+        self.template = self.config.get('template', 'modern')
+
         self._setup_custom_styles()
 
     def _clean_emoji_from_data(self, data):
@@ -89,14 +101,27 @@ class CVGenerator:
         return clean_dict(data)
 
     def _setup_custom_styles(self):
-        """Setup custom paragraph styles"""
+        """Setup custom paragraph styles with template-specific configurations"""
 
+        # Get template-specific style configurations
+        if self.template == 'modern':
+            self._setup_modern_styles()
+        elif self.template == 'classic':
+            self._setup_classic_styles()
+        elif self.template == 'creative':
+            self._setup_creative_styles()
+        else:
+            # Default to modern
+            self._setup_modern_styles()
+
+    def _setup_modern_styles(self):
+        """Setup modern template styles"""
         # Name style - Bold and large
         self.styles.add(ParagraphStyle(
             name='Name',
             parent=self.styles['Heading1'],
             fontSize=28,
-            textColor=colors.HexColor('#2c3e50'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=4,
             spaceBefore=0,
             alignment=TA_LEFT,
@@ -109,7 +134,7 @@ class CVGenerator:
             name='Headline',
             parent=self.styles['Normal'],
             fontSize=13,
-            textColor=colors.HexColor('#34495e'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=8,
             fontName='Helvetica',
             leading=16
@@ -120,7 +145,7 @@ class CVGenerator:
             name='Contact',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#7f8c8d'),
+            textColor=colors.HexColor(self.colors['secondary_text']),
             spaceAfter=16,
             fontName='Helvetica',
             leading=14
@@ -131,7 +156,7 @@ class CVGenerator:
             name='SectionHeader',
             parent=self.styles['Heading2'],
             fontSize=14,
-            textColor=colors.HexColor('#2c3e50'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=10,
             spaceBefore=16,
             fontName='Helvetica-Bold',
@@ -144,7 +169,7 @@ class CVGenerator:
             name='JobTitle',
             parent=self.styles['Normal'],
             fontSize=11,
-            textColor=colors.HexColor('#2c3e50'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=3,
             fontName='Helvetica-Bold',
             leading=14
@@ -155,7 +180,7 @@ class CVGenerator:
             name='Company',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#3498db'),
+            textColor=colors.HexColor(self.colors['primary']),
             spaceAfter=3,
             fontName='Helvetica-Oblique',
             leading=13
@@ -166,7 +191,7 @@ class CVGenerator:
             name='DateLocation',
             parent=self.styles['Normal'],
             fontSize=9,
-            textColor=colors.HexColor('#95a5a6'),
+            textColor=colors.HexColor(self.colors['secondary_text']),
             spaceAfter=6,
             fontName='Helvetica',
             leading=12
@@ -177,7 +202,7 @@ class CVGenerator:
             name='Description',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#34495e'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=0,
             fontName='Helvetica',
             leading=14,
@@ -189,7 +214,7 @@ class CVGenerator:
             name='Summary',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#34495e'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=0,
             fontName='Helvetica',
             leading=15,
@@ -201,7 +226,246 @@ class CVGenerator:
             name='SkillItem',
             parent=self.styles['Normal'],
             fontSize=9,
-            textColor=colors.HexColor('#34495e'),
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=13
+        ))
+
+    def _setup_classic_styles(self):
+        """Setup classic template styles - more traditional and formal"""
+        # Name style - Centered, larger
+        self.styles.add(ParagraphStyle(
+            name='Name',
+            parent=self.styles['Heading1'],
+            fontSize=32,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=6,
+            spaceBefore=0,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold',
+            leading=36
+        ))
+
+        # Headline style - centered
+        self.styles.add(ParagraphStyle(
+            name='Headline',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=8,
+            fontName='Helvetica',
+            leading=16,
+            alignment=TA_CENTER
+        ))
+
+        # Contact style - centered
+        self.styles.add(ParagraphStyle(
+            name='Contact',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['secondary_text']),
+            spaceAfter=16,
+            fontName='Helvetica',
+            leading=14,
+            alignment=TA_CENTER
+        ))
+
+        # Section header style - Centered with line
+        self.styles.add(ParagraphStyle(
+            name='SectionHeader',
+            parent=self.styles['Heading2'],
+            fontSize=13,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=10,
+            spaceBefore=16,
+            fontName='Helvetica-Bold',
+            leading=18,
+            alignment=TA_CENTER,
+            textTransform='uppercase'
+        ))
+
+        # Job title style
+        self.styles.add(ParagraphStyle(
+            name='JobTitle',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=3,
+            fontName='Helvetica-Bold',
+            leading=14
+        ))
+
+        # Company style - less emphasis
+        self.styles.add(ParagraphStyle(
+            name='Company',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=3,
+            fontName='Helvetica',
+            leading=13
+        ))
+
+        # Date/Location style
+        self.styles.add(ParagraphStyle(
+            name='DateLocation',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor(self.colors['secondary_text']),
+            spaceAfter=6,
+            fontName='Helvetica',
+            leading=12
+        ))
+
+        # Description style
+        self.styles.add(ParagraphStyle(
+            name='Description',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=14,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Summary style
+        self.styles.add(ParagraphStyle(
+            name='Summary',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=15,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Skill item style
+        self.styles.add(ParagraphStyle(
+            name='SkillItem',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=13
+        ))
+
+    def _setup_creative_styles(self):
+        """Setup creative template styles - more colorful and bold"""
+        # Name style - Bold and colorful
+        self.styles.add(ParagraphStyle(
+            name='Name',
+            parent=self.styles['Heading1'],
+            fontSize=30,
+            textColor=colors.HexColor(self.colors['primary']),
+            spaceAfter=4,
+            spaceBefore=0,
+            alignment=TA_LEFT,
+            fontName='Helvetica-Bold',
+            leading=34
+        ))
+
+        # Headline style
+        self.styles.add(ParagraphStyle(
+            name='Headline',
+            parent=self.styles['Normal'],
+            fontSize=14,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=8,
+            fontName='Helvetica-Bold',
+            leading=17
+        ))
+
+        # Contact style
+        self.styles.add(ParagraphStyle(
+            name='Contact',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['secondary_text']),
+            spaceAfter=16,
+            fontName='Helvetica',
+            leading=14
+        ))
+
+        # Section header style - Colorful
+        self.styles.add(ParagraphStyle(
+            name='SectionHeader',
+            parent=self.styles['Heading2'],
+            fontSize=15,
+            textColor=colors.HexColor(self.colors['primary']),
+            spaceAfter=10,
+            spaceBefore=16,
+            fontName='Helvetica-Bold',
+            leading=19,
+            textTransform='uppercase'
+        ))
+
+        # Job title style - emphasized
+        self.styles.add(ParagraphStyle(
+            name='JobTitle',
+            parent=self.styles['Normal'],
+            fontSize=12,
+            textColor=colors.HexColor(self.colors['primary']),
+            spaceAfter=3,
+            fontName='Helvetica-Bold',
+            leading=15
+        ))
+
+        # Company style
+        self.styles.add(ParagraphStyle(
+            name='Company',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=3,
+            fontName='Helvetica',
+            leading=14
+        ))
+
+        # Date/Location style
+        self.styles.add(ParagraphStyle(
+            name='DateLocation',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor(self.colors['secondary_text']),
+            spaceAfter=6,
+            fontName='Helvetica',
+            leading=12
+        ))
+
+        # Description style
+        self.styles.add(ParagraphStyle(
+            name='Description',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=14,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Summary style
+        self.styles.add(ParagraphStyle(
+            name='Summary',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=15,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Skill item style
+        self.styles.add(ParagraphStyle(
+            name='SkillItem',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=0,
             fontName='Helvetica',
             leading=13
@@ -275,7 +539,7 @@ class CVGenerator:
         elements.append(HRFlowable(
             width="100%",
             thickness=1,
-            color=colors.HexColor('#3498db'),
+            color=colors.HexColor(self.colors['primary']),
             spaceBefore=0,
             spaceAfter=10
         ))

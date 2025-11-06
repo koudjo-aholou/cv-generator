@@ -138,6 +138,59 @@
                         </div>
 
                         <div class="config-section">
+                            <h3>🎨 Template et Couleurs</h3>
+                            <p class="config-help">Choisissez un template et personnalisez les couleurs</p>
+
+                            <div class="template-selector">
+                                <label class="template-option" data-template="modern">
+                                    <input type="radio" name="template" value="modern" checked>
+                                    <div class="template-card">
+                                        <div class="template-preview modern-preview"></div>
+                                        <span class="template-name">Moderne</span>
+                                    </div>
+                                </label>
+                                <label class="template-option" data-template="classic">
+                                    <input type="radio" name="template" value="classic">
+                                    <div class="template-card">
+                                        <div class="template-preview classic-preview"></div>
+                                        <span class="template-name">Classique</span>
+                                    </div>
+                                </label>
+                                <label class="template-option" data-template="creative">
+                                    <input type="radio" name="template" value="creative">
+                                    <div class="template-card">
+                                        <div class="template-preview creative-preview"></div>
+                                        <span class="template-name">Créatif</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="color-pickers">
+                                <div class="form-group">
+                                    <label for="color-primary">Couleur principale</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-primary" value="#3498db">
+                                        <input type="text" id="color-primary-hex" value="#3498db" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="color-text">Texte principal</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-text" value="#2c3e50">
+                                        <input type="text" id="color-text-hex" value="#2c3e50" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="color-secondary-text">Texte secondaire</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-secondary-text" value="#7f8c8d">
+                                        <input type="text" id="color-secondary-text-hex" value="#7f8c8d" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
                             <h3>📋 Sections du CV</h3>
                             <p class="config-help">Cochez les sections à inclure dans votre CV</p>
                             <div class="section-toggles">
