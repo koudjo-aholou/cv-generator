@@ -495,6 +495,24 @@ footer {
     box-shadow: 0 0 0 3px rgba(0, 115, 177, 0.1);
 }
 
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: white;
+    transition: border-color 0.2s;
+    width: 100%;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 115, 177, 0.1);
+}
+
 .section-toggles, .item-toggles {
     display: flex;
     flex-direction: column;
@@ -787,6 +805,99 @@ footer {
     font-family: monospace;
     color: var(--text-color);
     padding: 0.25rem;
+}
+
+/* Editor Sections */
+.editor-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.editor-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.editor-item-title {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.editor-toggle-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+}
+
+.editor-toggle-btn:hover {
+    background: var(--primary-dark);
+}
+
+.editor-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.editor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+/* Skills Search */
+.skills-search {
+    margin-bottom: 1rem;
+}
+
+.skills-search input {
+    width: 100%;
+    padding: 0.65rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.skills-search input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 115, 177, 0.1);
+}
+
+.skill-item-wrapper {
+    position: relative;
+}
+
+.skill-item-wrapper .drag-handle {
+    position: absolute;
+    left: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: grab;
+    color: var(--text-light);
+    font-size: 1rem;
+}
+
+.skill-item-wrapper .drag-handle:active {
+    cursor: grabbing;
+}
+
+.skill-item-wrapper .item-toggle {
+    padding-left: 2.5rem;
 }
 
 /* Responsive */

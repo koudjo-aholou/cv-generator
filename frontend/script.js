@@ -36,6 +36,7 @@ let currentConfig = {
     section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
     experience_visible: null, // null means all visible
     education_visible: null,   // null means all visible
+    skills_selected: null,     // null means all visible, array means specific skills
     template: 'modern',
     colors: {
         primary: '#3498db',
@@ -392,11 +393,25 @@ function populateConfigUI() {
     // Populate section order
     populateSectionOrder();
 
-    // Populate experience items
+    // Populate profile summary editor
+    populateProfileSummaryEditor();
+
+    // Populate experience editor and items
+    populateExperienceEditor();
     populateExperienceItems();
 
-    // Populate education items
+    // Populate education editor and items
+    populateEducationEditor();
     populateEducationItems();
+
+    // Populate skills selector
+    populateSkillsSelector();
+
+    // Populate languages editor
+    populateLanguagesEditor();
+
+    // Populate certifications editor
+    populateCertificationsEditor();
 }
 
 function checkSectionHasData(section) {
@@ -620,6 +635,550 @@ function toggleEducationItem(index, checked) {
     }
 }
 
+// Profile Summary Editor
+function populateProfileSummaryEditor() {
+    const section = document.getElementById('profile-summary-section');
+    const textarea = document.getElementById('profile-summary');
+
+    if (!parsedData.profile || !parsedData.profile.summary) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    textarea.value = parsedData.profile.summary || '';
+
+    textarea.addEventListener('input', (e) => {
+        parsedData.profile.summary = e.target.value;
+    });
+}
+
+// Experience Editor
+function populateExperienceEditor() {
+    const section = document.getElementById('experience-editor-section');
+    const editorContainer = document.getElementById('experience-editor');
+
+    if (!parsedData.positions || parsedData.positions.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    editorContainer.innerHTML = '';
+
+    parsedData.positions.forEach((position, index) => {
+        const item = document.createElement('div');
+        item.className = 'editor-item';
+
+        const header = document.createElement('div');
+        header.className = 'editor-item-header';
+
+        const title = document.createElement('span');
+        title.className = 'editor-item-title';
+        title.textContent = `${position.title || 'Sans titre'} - ${position.company || 'Entreprise'}`;
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'editor-toggle-btn';
+        toggleBtn.textContent = 'Modifier';
+
+        header.appendChild(title);
+        header.appendChild(toggleBtn);
+
+        const fields = document.createElement('div');
+        fields.className = 'editor-fields';
+        fields.style.display = 'none';
+
+        // Title and Company
+        const row1 = document.createElement('div');
+        row1.className = 'editor-row';
+
+        const titleGroup = document.createElement('div');
+        titleGroup.className = 'form-group';
+        const titleLabel = document.createElement('label');
+        titleLabel.textContent = 'Titre du poste';
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.value = position.title || '';
+        titleInput.addEventListener('input', (e) => {
+            parsedData.positions[index].title = e.target.value;
+            title.textContent = `${e.target.value} - ${parsedData.positions[index].company || 'Entreprise'}`;
+        });
+        titleGroup.appendChild(titleLabel);
+        titleGroup.appendChild(titleInput);
+
+        const companyGroup = document.createElement('div');
+        companyGroup.className = 'form-group';
+        const companyLabel = document.createElement('label');
+        companyLabel.textContent = 'Entreprise';
+        const companyInput = document.createElement('input');
+        companyInput.type = 'text';
+        companyInput.value = position.company || '';
+        companyInput.addEventListener('input', (e) => {
+            parsedData.positions[index].company = e.target.value;
+            title.textContent = `${parsedData.positions[index].title || 'Sans titre'} - ${e.target.value}`;
+        });
+        companyGroup.appendChild(companyLabel);
+        companyGroup.appendChild(companyInput);
+
+        row1.appendChild(titleGroup);
+        row1.appendChild(companyGroup);
+
+        // Dates
+        const row2 = document.createElement('div');
+        row2.className = 'editor-row';
+
+        const startGroup = document.createElement('div');
+        startGroup.className = 'form-group';
+        const startLabel = document.createElement('label');
+        startLabel.textContent = 'Date de début';
+        const startInput = document.createElement('input');
+        startInput.type = 'text';
+        startInput.value = position.started_on || '';
+        startInput.placeholder = 'Ex: Jan 2020';
+        startInput.addEventListener('input', (e) => {
+            parsedData.positions[index].started_on = e.target.value;
+        });
+        startGroup.appendChild(startLabel);
+        startGroup.appendChild(startInput);
+
+        const endGroup = document.createElement('div');
+        endGroup.className = 'form-group';
+        const endLabel = document.createElement('label');
+        endLabel.textContent = 'Date de fin';
+        const endInput = document.createElement('input');
+        endInput.type = 'text';
+        endInput.value = position.finished_on || '';
+        endInput.placeholder = 'Ex: Déc 2022 ou Présent';
+        endInput.addEventListener('input', (e) => {
+            parsedData.positions[index].finished_on = e.target.value;
+        });
+        endGroup.appendChild(endLabel);
+        endGroup.appendChild(endInput);
+
+        row2.appendChild(startGroup);
+        row2.appendChild(endGroup);
+
+        // Description
+        const descGroup = document.createElement('div');
+        descGroup.className = 'form-group';
+        const descLabel = document.createElement('label');
+        descLabel.textContent = 'Description';
+        const descTextarea = document.createElement('textarea');
+        descTextarea.rows = 4;
+        descTextarea.value = position.description || '';
+        descTextarea.addEventListener('input', (e) => {
+            parsedData.positions[index].description = e.target.value;
+        });
+        descGroup.appendChild(descLabel);
+        descGroup.appendChild(descTextarea);
+
+        fields.appendChild(row1);
+        fields.appendChild(row2);
+        fields.appendChild(descGroup);
+
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = fields.style.display === 'none';
+            fields.style.display = isHidden ? 'flex' : 'none';
+            toggleBtn.textContent = isHidden ? 'Masquer' : 'Modifier';
+        });
+
+        item.appendChild(header);
+        item.appendChild(fields);
+        editorContainer.appendChild(item);
+    });
+}
+
+// Education Editor
+function populateEducationEditor() {
+    const section = document.getElementById('education-editor-section');
+    const editorContainer = document.getElementById('education-editor');
+
+    if (!parsedData.education || parsedData.education.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    editorContainer.innerHTML = '';
+
+    parsedData.education.forEach((edu, index) => {
+        const item = document.createElement('div');
+        item.className = 'editor-item';
+
+        const header = document.createElement('div');
+        header.className = 'editor-item-header';
+
+        const title = document.createElement('span');
+        title.className = 'editor-item-title';
+        title.textContent = `${edu.degree || 'Diplôme'} - ${edu.school || 'École'}`;
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'editor-toggle-btn';
+        toggleBtn.textContent = 'Modifier';
+
+        header.appendChild(title);
+        header.appendChild(toggleBtn);
+
+        const fields = document.createElement('div');
+        fields.className = 'editor-fields';
+        fields.style.display = 'none';
+
+        // Degree and School
+        const row1 = document.createElement('div');
+        row1.className = 'editor-row';
+
+        const degreeGroup = document.createElement('div');
+        degreeGroup.className = 'form-group';
+        const degreeLabel = document.createElement('label');
+        degreeLabel.textContent = 'Diplôme';
+        const degreeInput = document.createElement('input');
+        degreeInput.type = 'text';
+        degreeInput.value = edu.degree || '';
+        degreeInput.addEventListener('input', (e) => {
+            parsedData.education[index].degree = e.target.value;
+            title.textContent = `${e.target.value} - ${parsedData.education[index].school || 'École'}`;
+        });
+        degreeGroup.appendChild(degreeLabel);
+        degreeGroup.appendChild(degreeInput);
+
+        const schoolGroup = document.createElement('div');
+        schoolGroup.className = 'form-group';
+        const schoolLabel = document.createElement('label');
+        schoolLabel.textContent = 'École / Université';
+        const schoolInput = document.createElement('input');
+        schoolInput.type = 'text';
+        schoolInput.value = edu.school || '';
+        schoolInput.addEventListener('input', (e) => {
+            parsedData.education[index].school = e.target.value;
+            title.textContent = `${parsedData.education[index].degree || 'Diplôme'} - ${e.target.value}`;
+        });
+        schoolGroup.appendChild(schoolLabel);
+        schoolGroup.appendChild(schoolInput);
+
+        row1.appendChild(degreeGroup);
+        row1.appendChild(schoolGroup);
+
+        // Field of study
+        const fieldGroup = document.createElement('div');
+        fieldGroup.className = 'form-group';
+        const fieldLabel = document.createElement('label');
+        fieldLabel.textContent = 'Domaine d\'études';
+        const fieldInput = document.createElement('input');
+        fieldInput.type = 'text';
+        fieldInput.value = edu.field_of_study || '';
+        fieldInput.addEventListener('input', (e) => {
+            parsedData.education[index].field_of_study = e.target.value;
+        });
+        fieldGroup.appendChild(fieldLabel);
+        fieldGroup.appendChild(fieldInput);
+
+        // Dates
+        const row2 = document.createElement('div');
+        row2.className = 'editor-row';
+
+        const startGroup = document.createElement('div');
+        startGroup.className = 'form-group';
+        const startLabel = document.createElement('label');
+        startLabel.textContent = 'Date de début';
+        const startInput = document.createElement('input');
+        startInput.type = 'text';
+        startInput.value = edu.start_date || '';
+        startInput.placeholder = 'Ex: 2015';
+        startInput.addEventListener('input', (e) => {
+            parsedData.education[index].start_date = e.target.value;
+        });
+        startGroup.appendChild(startLabel);
+        startGroup.appendChild(startInput);
+
+        const endGroup = document.createElement('div');
+        endGroup.className = 'form-group';
+        const endLabel = document.createElement('label');
+        endLabel.textContent = 'Date de fin';
+        const endInput = document.createElement('input');
+        endInput.type = 'text';
+        endInput.value = edu.end_date || '';
+        endInput.placeholder = 'Ex: 2019';
+        endInput.addEventListener('input', (e) => {
+            parsedData.education[index].end_date = e.target.value;
+        });
+        endGroup.appendChild(endLabel);
+        endGroup.appendChild(endInput);
+
+        row2.appendChild(startGroup);
+        row2.appendChild(endGroup);
+
+        fields.appendChild(row1);
+        fields.appendChild(fieldGroup);
+        fields.appendChild(row2);
+
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = fields.style.display === 'none';
+            fields.style.display = isHidden ? 'flex' : 'none';
+            toggleBtn.textContent = isHidden ? 'Masquer' : 'Modifier';
+        });
+
+        item.appendChild(header);
+        item.appendChild(fields);
+        editorContainer.appendChild(item);
+    });
+}
+
+// Skills Selector
+function populateSkillsSelector() {
+    const section = document.getElementById('skills-selector-section');
+    const selectorContainer = document.getElementById('skills-selector');
+    const searchInput = document.getElementById('skills-search');
+
+    if (!parsedData.skills || parsedData.skills.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+
+    // Initialize skills_selected with all skills if not set
+    if (!currentConfig.skills_selected) {
+        currentConfig.skills_selected = [...parsedData.skills];
+    }
+
+    function renderSkills(filter = '') {
+        selectorContainer.innerHTML = '';
+
+        const filteredSkills = parsedData.skills.filter(skill =>
+            skill.toLowerCase().includes(filter.toLowerCase())
+        );
+
+        filteredSkills.forEach((skill, originalIndex) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'skill-item-wrapper';
+            wrapper.draggable = true;
+
+            const dragHandle = document.createElement('span');
+            dragHandle.className = 'drag-handle';
+            dragHandle.textContent = '☰';
+
+            const item = document.createElement('label');
+            item.className = 'item-toggle';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = currentConfig.skills_selected.includes(skill);
+            checkbox.onchange = (e) => {
+                if (e.target.checked) {
+                    if (!currentConfig.skills_selected.includes(skill)) {
+                        currentConfig.skills_selected.push(skill);
+                    }
+                } else {
+                    currentConfig.skills_selected = currentConfig.skills_selected.filter(s => s !== skill);
+                }
+            };
+
+            const text = document.createElement('span');
+            text.textContent = skill;
+
+            item.appendChild(checkbox);
+            item.appendChild(text);
+
+            wrapper.appendChild(dragHandle);
+            wrapper.appendChild(item);
+
+            selectorContainer.appendChild(wrapper);
+        });
+    }
+
+    renderSkills();
+
+    searchInput.addEventListener('input', (e) => {
+        renderSkills(e.target.value);
+    });
+}
+
+// Languages Editor
+function populateLanguagesEditor() {
+    const section = document.getElementById('languages-editor-section');
+    const editorContainer = document.getElementById('languages-editor');
+
+    if (!parsedData.languages || parsedData.languages.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    editorContainer.innerHTML = '';
+
+    parsedData.languages.forEach((lang, index) => {
+        const item = document.createElement('div');
+        item.className = 'editor-item';
+
+        const row = document.createElement('div');
+        row.className = 'editor-row';
+
+        const nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Langue';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = lang.name || '';
+        nameInput.addEventListener('input', (e) => {
+            parsedData.languages[index].name = e.target.value;
+        });
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+
+        const proficiencyGroup = document.createElement('div');
+        proficiencyGroup.className = 'form-group';
+        const proficiencyLabel = document.createElement('label');
+        proficiencyLabel.textContent = 'Niveau';
+        const proficiencyInput = document.createElement('input');
+        proficiencyInput.type = 'text';
+        proficiencyInput.value = lang.proficiency || '';
+        proficiencyInput.placeholder = 'Ex: Courant, Natif, B2...';
+        proficiencyInput.addEventListener('input', (e) => {
+            parsedData.languages[index].proficiency = e.target.value;
+        });
+        proficiencyGroup.appendChild(proficiencyLabel);
+        proficiencyGroup.appendChild(proficiencyInput);
+
+        row.appendChild(nameGroup);
+        row.appendChild(proficiencyGroup);
+
+        item.appendChild(row);
+        editorContainer.appendChild(item);
+    });
+}
+
+// Certifications Editor
+function populateCertificationsEditor() {
+    const section = document.getElementById('certifications-editor-section');
+    const editorContainer = document.getElementById('certifications-editor');
+
+    if (!parsedData.certifications || parsedData.certifications.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+    editorContainer.innerHTML = '';
+
+    parsedData.certifications.forEach((cert, index) => {
+        const item = document.createElement('div');
+        item.className = 'editor-item';
+
+        const header = document.createElement('div');
+        header.className = 'editor-item-header';
+
+        const title = document.createElement('span');
+        title.className = 'editor-item-title';
+        title.textContent = cert.name || 'Certification';
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'editor-toggle-btn';
+        toggleBtn.textContent = 'Modifier';
+
+        header.appendChild(title);
+        header.appendChild(toggleBtn);
+
+        const fields = document.createElement('div');
+        fields.className = 'editor-fields';
+        fields.style.display = 'none';
+
+        // Name
+        const nameGroup = document.createElement('div');
+        nameGroup.className = 'form-group';
+        const nameLabel = document.createElement('label');
+        nameLabel.textContent = 'Nom de la certification';
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.value = cert.name || '';
+        nameInput.addEventListener('input', (e) => {
+            parsedData.certifications[index].name = e.target.value;
+            title.textContent = e.target.value || 'Certification';
+        });
+        nameGroup.appendChild(nameLabel);
+        nameGroup.appendChild(nameInput);
+
+        // Authority
+        const authorityGroup = document.createElement('div');
+        authorityGroup.className = 'form-group';
+        const authorityLabel = document.createElement('label');
+        authorityLabel.textContent = 'Organisme';
+        const authorityInput = document.createElement('input');
+        authorityInput.type = 'text';
+        authorityInput.value = cert.authority || '';
+        authorityInput.addEventListener('input', (e) => {
+            parsedData.certifications[index].authority = e.target.value;
+        });
+        authorityGroup.appendChild(authorityLabel);
+        authorityGroup.appendChild(authorityInput);
+
+        // Dates
+        const row = document.createElement('div');
+        row.className = 'editor-row';
+
+        const startGroup = document.createElement('div');
+        startGroup.className = 'form-group';
+        const startLabel = document.createElement('label');
+        startLabel.textContent = 'Date d\'obtention';
+        const startInput = document.createElement('input');
+        startInput.type = 'text';
+        startInput.value = cert.start_date || '';
+        startInput.placeholder = 'Ex: Jan 2021';
+        startInput.addEventListener('input', (e) => {
+            parsedData.certifications[index].start_date = e.target.value;
+        });
+        startGroup.appendChild(startLabel);
+        startGroup.appendChild(startInput);
+
+        const endGroup = document.createElement('div');
+        endGroup.className = 'form-group';
+        const endLabel = document.createElement('label');
+        endLabel.textContent = 'Date d\'expiration';
+        const endInput = document.createElement('input');
+        endInput.type = 'text';
+        endInput.value = cert.end_date || '';
+        endInput.placeholder = 'Ex: Jan 2024 (optionnel)';
+        endInput.addEventListener('input', (e) => {
+            parsedData.certifications[index].end_date = e.target.value;
+        });
+        endGroup.appendChild(endLabel);
+        endGroup.appendChild(endInput);
+
+        row.appendChild(startGroup);
+        row.appendChild(endGroup);
+
+        // URL
+        const urlGroup = document.createElement('div');
+        urlGroup.className = 'form-group';
+        const urlLabel = document.createElement('label');
+        urlLabel.textContent = 'URL (optionnel)';
+        const urlInput = document.createElement('input');
+        urlInput.type = 'url';
+        urlInput.value = cert.url || '';
+        urlInput.placeholder = 'https://...';
+        urlInput.addEventListener('input', (e) => {
+            parsedData.certifications[index].url = e.target.value;
+        });
+        urlGroup.appendChild(urlLabel);
+        urlGroup.appendChild(urlInput);
+
+        fields.appendChild(nameGroup);
+        fields.appendChild(authorityGroup);
+        fields.appendChild(row);
+        fields.appendChild(urlGroup);
+
+        toggleBtn.addEventListener('click', () => {
+            const isHidden = fields.style.display === 'none';
+            fields.style.display = isHidden ? 'flex' : 'none';
+            toggleBtn.textContent = isHidden ? 'Masquer' : 'Modifier';
+        });
+
+        item.appendChild(header);
+        item.appendChild(fields);
+        editorContainer.appendChild(item);
+    });
+}
+
 // Generate PDF preview
 async function generatePreview() {
     previewLoading.style.display = 'flex';
@@ -640,6 +1199,11 @@ async function generatePreview() {
         }
         if (contactAddressInput && contactAddressInput.value) {
             dataToSend.profile.address = contactAddressInput.value;
+        }
+
+        // Update skills if specific skills are selected
+        if (currentConfig.skills_selected && currentConfig.skills_selected.length > 0) {
+            dataToSend.skills = currentConfig.skills_selected;
         }
 
         if (photoFile) {
@@ -772,6 +1336,7 @@ function resetApp() {
         section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
         experience_visible: null,
         education_visible: null,
+        skills_selected: null,
         template: 'modern',
         colors: {
             primary: '#3498db',
