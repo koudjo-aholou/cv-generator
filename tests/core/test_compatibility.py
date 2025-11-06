@@ -29,7 +29,8 @@ class TestEncodingCompatibility:
     def test_utf8_characters_in_profile(self, client):
         """Test UTF-8 characters in profile data."""
         # Create CSV with UTF-8 characters
-        csv_content = "First Name,Last Name,Email Address,Phone,Summary\n"
+        # Need 'Profile' in filename for parser to recognize it
+        csv_content = "First Name,Last Name,Email Address,Phone Number,Summary\n"
         csv_content += "François,Müller,françois@example.com,+33123456789,Développeur logiciel spécialisé\n"
 
         data = {
@@ -45,8 +46,8 @@ class TestEncodingCompatibility:
 
         # UTF-8 characters should be preserved
         profile = parsed_data.get('profile', {})
-        assert 'François' in str(profile.get('first_name', ''))
-        assert 'Müller' in str(profile.get('last_name', ''))
+        assert profile.get('first_name') == 'François'
+        assert profile.get('last_name') == 'Müller'
 
     def test_special_characters_in_experience(self, client):
         """Test special characters in experience descriptions."""
@@ -176,7 +177,8 @@ class TestCSVFormatCompatibility:
 
     def test_csv_with_empty_fields(self, client):
         """Test CSV with empty fields."""
-        csv_content = "First Name,Last Name,Email Address,Phone,Summary\n"
+        # Need 'Profile' in filename for parser to recognize it
+        csv_content = "First Name,Last Name,Email Address,Phone Number,Summary\n"
         csv_content += "John,Doe,,+1234567890,\n"  # Empty email and summary
 
         data = {
@@ -194,6 +196,7 @@ class TestCSVFormatCompatibility:
         profile = parsed_data.get('profile', {})
         assert profile.get('first_name') == 'John'
         assert profile.get('last_name') == 'Doe'
+        assert profile.get('email') == ''  # Empty field should be empty string
 
 
 class TestDateFormatCompatibility:
@@ -211,7 +214,8 @@ class TestDateFormatCompatibility:
             csv_content = f"Company Name,Title,Started On,Finished On,Description\n"
             csv_content += f"Tech Corp,Developer,{start_date},{end_date},Developed software\n"
 
-            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, encoding='utf-8')
+            # Need 'positions' in filename for parser to recognize it
+            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='_positions.csv', delete=False, encoding='utf-8', prefix='test_')
             temp_file.write(csv_content)
             temp_file.close()
 
@@ -221,7 +225,7 @@ class TestDateFormatCompatibility:
 
                 # Should parse without crashing
                 assert isinstance(data, dict)
-                assert 'experience' in data
+                assert 'positions' in data
             finally:
                 os.remove(temp_file.name)
 

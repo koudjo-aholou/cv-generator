@@ -45,8 +45,17 @@ def get_secure_filepath(original_filename):
 
     # Generate unique filename to avoid collisions
     unique_id = uuid.uuid4().hex
-    extension = secured_name.rsplit('.', 1)[1].lower() if '.' in secured_name else 'csv'
-    safe_filename = f"{unique_id}.{extension}"
+
+    # Extract basename and extension
+    if '.' in secured_name:
+        basename = secured_name.rsplit('.', 1)[0]
+        extension = secured_name.rsplit('.', 1)[1].lower()
+    else:
+        basename = secured_name
+        extension = 'csv'
+
+    # Keep original basename for parser recognition, add UUID for uniqueness
+    safe_filename = f"{basename}_{unique_id}.{extension}"
 
     return os.path.join(UPLOAD_FOLDER, safe_filename)
 
