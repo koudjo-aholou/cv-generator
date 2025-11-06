@@ -23,6 +23,7 @@ const TEMPLATE_PRESETS = {
 // Stepper State
 let currentStep = 1;
 const totalSteps = 3;
+let isProcessingStep = false;
 
 // State
 let selectedFiles = [];
@@ -229,18 +230,29 @@ function goToStep(stepNumber) {
 }
 
 async function goToNextStep(fromStep) {
-    // Validate current step
-    const isValid = await validateStep(fromStep);
-    if (!isValid) {
+    // Prevent double-click/concurrent processing
+    if (isProcessingStep) {
         return;
     }
 
-    // Special handling for step 2 -> 3: generate preview
-    if (fromStep === 2) {
-        await generatePreviewForStep3();
-    }
+    isProcessingStep = true;
 
-    goToStep(fromStep + 1);
+    try {
+        // Validate current step
+        const isValid = await validateStep(fromStep);
+        if (!isValid) {
+            return;
+        }
+
+        // Special handling for step 2 -> 3: generate preview
+        if (fromStep === 2) {
+            await generatePreviewForStep3();
+        }
+
+        goToStep(fromStep + 1);
+    } finally {
+        isProcessingStep = false;
+    }
 }
 
 async function validateStep(stepNumber) {
@@ -342,6 +354,8 @@ function handleFiles(files) {
     }
 
     selectedFiles = files;
+    // Reset parsed data when files change
+    parsedData = null;
     displayFileList();
     hideError();
 }
@@ -390,6 +404,8 @@ function displayFileList() {
 
 function removeFile(index) {
     selectedFiles.splice(index, 1);
+    // Reset parsed data when files change
+    parsedData = null;
 
     if (selectedFiles.length === 0) {
         fileList.innerHTML = '';
