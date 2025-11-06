@@ -47,6 +47,11 @@ const sectionOrderList = document.getElementById('section-order');
 const experienceItemsList = document.getElementById('experience-items');
 const educationItemsList = document.getElementById('education-items');
 
+// Contact Fields
+const contactEmailInput = document.getElementById('contact-email');
+const contactPhoneInput = document.getElementById('contact-phone');
+const contactAddressInput = document.getElementById('contact-address');
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
@@ -268,6 +273,19 @@ function initializeConfig() {
 
 // Populate configuration UI
 function populateConfigUI() {
+    // Populate contact fields
+    if (parsedData.profile) {
+        if (contactEmailInput && parsedData.profile.email) {
+            contactEmailInput.value = parsedData.profile.email;
+        }
+        if (contactPhoneInput && parsedData.profile.phone) {
+            contactPhoneInput.value = parsedData.profile.phone;
+        }
+        if (contactAddressInput && parsedData.profile.address) {
+            contactAddressInput.value = parsedData.profile.address;
+        }
+    }
+
     // Update section toggles
     Object.keys(currentConfig.sections).forEach(section => {
         const toggle = document.getElementById(`toggle-${section}`);
@@ -521,6 +539,20 @@ async function generatePreview() {
     try {
         // Prepare data with photo if available
         const dataToSend = { ...parsedData };
+
+        // Update contact information from input fields
+        if (!dataToSend.profile) {
+            dataToSend.profile = {};
+        }
+        if (contactEmailInput && contactEmailInput.value) {
+            dataToSend.profile.email = contactEmailInput.value;
+        }
+        if (contactPhoneInput && contactPhoneInput.value) {
+            dataToSend.profile.phone = contactPhoneInput.value;
+        }
+        if (contactAddressInput && contactAddressInput.value) {
+            dataToSend.profile.address = contactAddressInput.value;
+        }
 
         if (photoFile) {
             const photoBase64 = await fileToBase64(photoFile);
