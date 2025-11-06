@@ -121,7 +121,7 @@ function setupEventListeners() {
     // Button events
     if (generateBtn) generateBtn.addEventListener('click', generateCV);
     if (resetBtn) resetBtn.addEventListener('click', resetApp);
-    if (refreshPreviewBtn) refreshPreviewBtn.addEventListener('click', refreshPreview);
+    if (refreshPreviewBtn) refreshPreviewBtn.addEventListener('click', async () => await refreshPreview());
     if (downloadFinalBtn) downloadFinalBtn.addEventListener('click', downloadFinalPDF);
 
     // Stepper navigation
@@ -131,8 +131,8 @@ function setupEventListeners() {
     const prevStep3Btn = document.getElementById('prevStep3');
     const newCvBtn = document.getElementById('newCvBtn');
 
-    if (nextStep1Btn) nextStep1Btn.addEventListener('click', () => goToNextStep(1));
-    if (nextStep2Btn) nextStep2Btn.addEventListener('click', () => goToNextStep(2));
+    if (nextStep1Btn) nextStep1Btn.addEventListener('click', async () => await goToNextStep(1));
+    if (nextStep2Btn) nextStep2Btn.addEventListener('click', async () => await goToNextStep(2));
     if (prevStep2Btn) prevStep2Btn.addEventListener('click', () => goToStep(1));
     if (prevStep3Btn) prevStep3Btn.addEventListener('click', () => goToStep(2));
     if (newCvBtn) newCvBtn.addEventListener('click', resetApp);
