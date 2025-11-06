@@ -87,6 +87,88 @@ class CVGenerator:
 
         return clean_dict(data)
 
+    def _format_description(self, text):
+        """
+        Format description text by handling line breaks, bullet points, and improving readability.
+
+        This function specifically handles LinkedIn export data where 'n' represents line breaks
+        (not the letter 'n' in words like 'un', 'on', 'modération', etc.)
+
+        Args:
+            text (str): Raw description text
+
+        Returns:
+            str: Formatted text with proper line breaks and structure
+        """
+        if not text or not isinstance(text, str):
+            return text
+
+        # IMPORTANT: Détecter UNIQUEMENT les 'n' qui sont des marqueurs de saut de ligne
+        # et non pas le 'n' qui fait partie de mots français
+
+        # Pattern 1: " nn " (double n entouré d'espaces) = nouveau paragraphe
+        # ATTENTION: Ne pas toucher "nn" dans les mots comme "données", "années"
+        text = re.sub(r'\s+nn\s+', '\n\n', text)
+
+        # Pattern 2: " n " (n entouré d'espaces) = saut de ligne
+        text = text.replace(' n ', '\n')
+
+        # Pattern 3: Début du texte qui commence par "n "
+        if text.startswith('n '):
+            text = text[2:]  # Supprimer le "n " du début
+
+        # Pattern 4: Après un point/virgule/deux-points suivi de " n " = début d'une nouvelle ligne
+        # Ex: "phrase. n Autre phrase" ou "phrase • n Autre"
+        text = re.sub(r'([.,:;•])\s+n\s+', r'\1\n', text)
+
+        # Pattern 5: "n" suivi d'une majuscule et précédé d'un espace = probablement un saut de ligne
+        # Ex: "phrase n Développement" (où 'n' sépare deux items)
+        text = re.sub(r'\s+n\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ])', r'\n\1', text)
+
+        # Nettoyer les espaces multiples (mais garder les \n)
+        text = re.sub(r'[^\S\n]+', ' ', text)  # Remplace les espaces multiples sauf \n
+
+        # Diviser en lignes
+        lines = text.split('\n')
+        formatted_lines = []
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                # Garder les lignes vides pour les paragraphes
+                if formatted_lines and formatted_lines[-1] != '':
+                    formatted_lines.append('')
+                continue
+
+            # Si la ligne contient des bullets "•", on les divise en items séparés
+            if '•' in line:
+                # Diviser la ligne sur les bullets
+                parts = line.split('•')
+                for i, part in enumerate(parts):
+                    part = part.strip()
+                    if part:
+                        # Le premier item (avant le premier •) peut ne pas être un bullet
+                        # Les suivants sont tous des bullets
+                        if i == 0 and not line.startswith('•'):
+                            formatted_lines.append(f'• {part}')
+                        else:
+                            formatted_lines.append(f'• {part}')
+            # Détecter et formater les autres bullet points
+            elif line.startswith('-') or line.startswith('*'):
+                formatted_lines.append(f'• {line[1:].strip()}')
+            else:
+                # Ligne normale sans bullet
+                formatted_lines.append(line)
+
+        # Joindre avec des balises HTML <br/> pour les sauts de ligne
+        # ReportLab supporte les balises HTML basiques dans les Paragraphs
+        formatted_text = '<br/>'.join(formatted_lines)
+
+        # Les doubles <br/> (paragraphes) deviennent des espacements plus grands
+        formatted_text = formatted_text.replace('<br/><br/>', '<br/><br/>')
+
+        return formatted_text
+
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
 
@@ -447,7 +529,8 @@ class CVGenerator:
 
         elements.extend(self._create_section_header("À Propos"))
 
-        summary_para = Paragraph(profile['summary'], self.styles['Summary'])
+        formatted_summary = self._format_description(profile['summary'])
+        summary_para = Paragraph(formatted_summary, self.styles['Summary'])
         elements.append(KeepTogether([summary_para, Spacer(1, 4*mm)]))
 
         return elements
@@ -481,7 +564,8 @@ class CVGenerator:
 
             # Description
             if position.get('description'):
-                position_elements.append(Paragraph(position['description'], self.styles['Description']))
+                formatted_desc = self._format_description(position['description'])
+                position_elements.append(Paragraph(formatted_desc, self.styles['Description']))
 
             # Add spacing between positions
             if i < len(self.data.get('positions', [])) - 1:
