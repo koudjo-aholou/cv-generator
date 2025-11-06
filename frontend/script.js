@@ -7,6 +7,7 @@ let parsedData = null;
 
 // DOM Elements
 const dropZone = document.getElementById('dropZone');
+const browseBtn = document.getElementById('browseBtn');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const parseBtn = document.getElementById('parseBtn');
@@ -23,8 +24,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // Drop zone events
-    dropZone.addEventListener('click', () => fileInput.click());
+    // Browse button - prevent event propagation to dropZone
+    browseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+    });
+
+    // Drop zone events - only trigger if not clicking on button
+    dropZone.addEventListener('click', (e) => {
+        // Don't trigger if clicking on the browse button
+        if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+            fileInput.click();
+        }
+    });
     dropZone.addEventListener('dragover', handleDragOver);
     dropZone.addEventListener('dragleave', handleDragLeave);
     dropZone.addEventListener('drop', handleDrop);
