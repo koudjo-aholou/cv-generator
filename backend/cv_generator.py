@@ -9,6 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import os
 import tempfile
 import base64
+import re
 from io import BytesIO
 from PIL import Image as PILImage
 
@@ -16,9 +17,54 @@ class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
 
     def __init__(self, data):
-        self.data = data
+        self.data = self._clean_emoji_from_data(data)
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+
+    def _clean_emoji_from_data(self, data):
+        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font"""
+        def remove_emoji(text):
+            if not isinstance(text, str):
+                return text
+            # Pattern pour détecter les emojis et autres symboles Unicode problématiques
+            # Inclut les emoji, symboles, pictogrammes, etc.
+            emoji_pattern = re.compile(
+                "["
+                "\U0001F600-\U0001F64F"  # emoticons
+                "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                "\U0001F680-\U0001F6FF"  # transport & map symbols
+                "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                "\U00002702-\U000027B0"  # dingbats
+                "\U000024C2-\U0001F251"
+                "\U0001F900-\U0001F9FF"  # supplemental symbols
+                "\U0001FA00-\U0001FA6F"  # extended symbols
+                "\U00002600-\U000026FF"  # miscellaneous symbols (inclut ☎ ✉ ✓ ★ etc.)
+                "\U00002000-\U0000206F"  # general punctuation
+                "\U00002190-\U000021FF"  # arrows
+                "\U00002300-\U000023FF"  # miscellaneous technical
+                "\U00002B00-\U00002BFF"  # miscellaneous symbols and arrows
+                "\u2022"  # bullet point •
+                "\u2023"  # triangular bullet ‣
+                "\u25E6"  # white bullet ◦
+                "\u2043"  # hyphen bullet ⁃
+                "\u2219"  # bullet operator ∙
+                "]+",
+                flags=re.UNICODE
+            )
+            return emoji_pattern.sub('', text).strip()
+
+        def clean_dict(d):
+            """Recursively clean emojis from dictionary values"""
+            if isinstance(d, dict):
+                return {k: clean_dict(v) for k, v in d.items()}
+            elif isinstance(d, list):
+                return [clean_dict(item) for item in d]
+            elif isinstance(d, str):
+                return remove_emoji(d)
+            else:
+                return d
+
+        return clean_dict(data)
 
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
