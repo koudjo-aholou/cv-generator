@@ -325,7 +325,7 @@ class CVGenerator:
             name='MissionClient',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#e67e22'),  # Orange pour différencier
+            textColor=colors.HexColor(self.colors['primary']),
             spaceAfter=2,
             spaceBefore=2,
             fontName='Helvetica-Bold',
@@ -338,7 +338,7 @@ class CVGenerator:
             name='MissionTitle',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#2c3e50'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=2,
             fontName='Helvetica-Oblique',
             leading=13,
@@ -350,7 +350,7 @@ class CVGenerator:
             name='MissionDescription',
             parent=self.styles['Normal'],
             fontSize=9,
-            textColor=colors.HexColor('#34495e'),
+            textColor=colors.HexColor(self.colors['text']),
             spaceAfter=0,
             fontName='Helvetica',
             leading=13,
@@ -379,40 +379,6 @@ class CVGenerator:
             spaceAfter=0,
             fontName='Helvetica',
             leading=13
-        ))
-
-        # Mission Client style (for consultant missions)
-        self.styles.add(ParagraphStyle(
-            name='MissionClient',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            textColor=colors.HexColor(self.colors['primary']),
-            spaceAfter=2,
-            fontName='Helvetica-Bold',
-            leading=13
-        ))
-
-        # Mission Title style
-        self.styles.add(ParagraphStyle(
-            name='MissionTitle',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            textColor=colors.HexColor(self.colors['text']),
-            spaceAfter=2,
-            fontName='Helvetica-Oblique',
-            leading=13
-        ))
-
-        # Mission Description style
-        self.styles.add(ParagraphStyle(
-            name='MissionDescription',
-            parent=self.styles['Normal'],
-            fontSize=9,
-            textColor=colors.HexColor(self.colors['text']),
-            spaceAfter=0,
-            fontName='Helvetica',
-            leading=13,
-            alignment=TA_JUSTIFY
         ))
 
     def _setup_classic_styles(self):
