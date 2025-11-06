@@ -506,6 +506,299 @@ Zenika,Tech Lead @ BNP,"Mission 2",Paris,2020-07,2020-12
         shutil.rmtree(temp_dir)
 
 
+class TestAdvancedDateEdgeCases(unittest.TestCase):
+    """Tests pour les edge cases de dates avancés"""
+
+    def setUp(self):
+        self.parser = LinkedInParser([])
+
+    def test_same_start_and_end_date(self):
+        """Position avec même date de début et fin (1 mois)"""
+        pos1 = {'started_on': 'Jan 2020', 'finished_on': 'Jan 2020'}
+        pos2 = {'started_on': 'Jan 2020', 'finished_on': 'Feb 2020'}
+        # Un mois qui touche un autre = chevauchement
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+
+    def test_very_old_positions(self):
+        """Positions très anciennes (années 1990)"""
+        pos1 = {'started_on': 'Jan 1995', 'finished_on': 'Dec 1998'}
+        pos2 = {'started_on': 'Jun 1996', 'finished_on': 'Jun 1997'}
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+
+    def test_future_positions(self):
+        """Positions futures"""
+        pos1 = {'started_on': 'Jan 2025', 'finished_on': 'Dec 2025'}
+        pos2 = {'started_on': 'Jun 2025', 'finished_on': 'Aug 2025'}
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+
+    def test_all_positions_active_present(self):
+        """Plusieurs positions toutes actives (Present)"""
+        pos1 = {'started_on': 'Jan 2020', 'finished_on': ''}
+        pos2 = {'started_on': 'Mar 2020', 'finished_on': ''}
+        pos3 = {'started_on': 'Jun 2020', 'finished_on': ''}
+        # Toutes actives = toutes se chevauchent
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+        self.assertTrue(self.parser._dates_overlap(pos2, pos3))
+        self.assertTrue(self.parser._dates_overlap(pos1, pos3))
+
+    def test_consecutive_months_no_gap(self):
+        """Mois consécutifs sans gap (Jan->Feb, Feb->Mar)"""
+        pos1 = {'started_on': 'Jan 2020', 'finished_on': 'Feb 2020'}
+        pos2 = {'started_on': 'Feb 2020', 'finished_on': 'Mar 2020'}
+        # Feb apparaît dans les deux = chevauchement
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+
+
+class TestCompanyNameEdgeCases(unittest.TestCase):
+    """Tests pour les edge cases de noms d'entreprises"""
+
+    def test_company_with_multiple_spaces(self):
+        """Nom d'entreprise avec espaces multiples"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Zenika  SARL,Consultant,,Paris,Jan 2020,Dec 2020
+Zenika  SARL,Developer @ Client,"Mission",Paris,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait fusionner malgré les espaces multiples
+        self.assertEqual(len(data['positions']), 1)
+        self.assertIn('missions', data['positions'][0])
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_company_with_special_chars(self):
+        """Nom d'entreprise avec caractères spéciaux"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+L'Oréal S.A.,Consultant,,Paris,Jan 2020,Dec 2020
+L'Oréal S.A.,Developer @ Internal Team,"Mission",Paris,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait fusionner
+        self.assertEqual(len(data['positions']), 1)
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_company_name_empty_or_whitespace(self):
+        """Nom d'entreprise vide ou whitespace"""
+        parser = LinkedInParser([])
+        parser.data['positions'] = [
+            {'company': '', 'title': 'Dev', 'description': '', 'started_on': 'Jan 2020', 'finished_on': 'Dec 2020'},
+            {'company': '   ', 'title': 'Dev2', 'description': 'Long', 'started_on': 'Mar 2020', 'finished_on': 'Aug 2020'}
+        ]
+
+        parser._merge_consultant_positions()
+
+        # Ne devrait pas fusionner (pas de nom d'entreprise valide)
+        self.assertEqual(len(parser.data['positions']), 2)
+
+
+class TestDescriptionEdgeCases(unittest.TestCase):
+    """Tests pour les edge cases de descriptions"""
+
+    def test_descriptions_equal_length(self):
+        """Descriptions de longueur exactement égale"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Zenika,Consultant,Description1,Paris,Jan 2020,Dec 2020
+Zenika,Developer @ Client,Description2,Paris,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait fusionner quand même (prend la première comme main)
+        self.assertEqual(len(data['positions']), 1)
+        self.assertIn('missions', data['positions'][0])
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_both_descriptions_empty(self):
+        """Les deux descriptions sont vides"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Zenika,Consultant,,Paris,Jan 2020,Dec 2020
+Zenika,Developer @ Client,,Paris,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait fusionner (descriptions égales = 0)
+        self.assertEqual(len(data['positions']), 1)
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_very_long_description(self):
+        """Description très longue (>10000 caractères)"""
+        temp_dir = tempfile.mkdtemp()
+        long_desc = "A" * 15000  # 15k caractères
+        positions_csv = f"""Company Name,Title,Description,Location,Started On,Finished On
+Zenika,Consultant,Short,Paris,Jan 2020,Dec 2020
+Zenika,Developer @ Client,"{long_desc}",Paris,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait fusionner et garder la longue comme mission
+        self.assertEqual(len(data['positions']), 1)
+        mission = data['positions'][0]['missions'][0]
+        self.assertGreater(len(mission['description']), 10000)
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+
+class TestMultipleOverlappingPositions(unittest.TestCase):
+    """Tests pour plusieurs positions qui se chevauchent"""
+
+    def test_five_positions_same_company(self):
+        """5 positions pour la même entreprise qui se chevauchent"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Accenture,Senior Consultant,,Paris,Jan 2020,Dec 2022
+Accenture,Dev @ Client1,"Mission 1",Remote,Jan 2020,Jun 2020
+Accenture,Dev @ Client2,"Mission 2",Remote,Jul 2020,Dec 2020
+Accenture,Dev @ Client3,"Mission 3",Remote,Jan 2021,Jun 2021
+Accenture,Dev @ Client4,"Mission 4",Remote,Jul 2021,Dec 2022
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Devrait avoir 1 position principale avec 4 missions
+        self.assertEqual(len(data['positions']), 1)
+        self.assertEqual(len(data['positions'][0]['missions']), 4)
+
+        # Vérifier les clients extraits
+        clients = [m['client'] for m in data['positions'][0]['missions']]
+        self.assertIn('Client1', clients)
+        self.assertIn('Client2', clients)
+        self.assertIn('Client3', clients)
+        self.assertIn('Client4', clients)
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_cascading_overlaps(self):
+        """Chevauchements en cascade - teste le comportement actuel"""
+        temp_dir = tempfile.mkdtemp()
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Zenika,Consultant,,Paris,Jan 2020,Jun 2020
+Zenika,Dev @ Client1,"Mission 1",Remote,Mar 2020,Sep 2020
+Zenika,Dev @ Client2,"Mission 2",Remote,Jul 2020,Dec 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Consultant (Jan-Jun) chevauche Mission1 (Mar-Sep) ✓
+        # Mission1 sera fusionnée avec Consultant
+        # Mission2 (Jul-Dec) ne chevauche PAS Consultant (Jan-Jun) ✗
+        # Résultat: 2 positions (Consultant+Mission1, Mission2 séparée)
+        self.assertEqual(len(data['positions']), 2)
+
+        # Une des positions devrait avoir 1 mission
+        positions_with_missions = [p for p in data['positions'] if 'missions' in p]
+        self.assertEqual(len(positions_with_missions), 1)
+        self.assertEqual(len(positions_with_missions[0]['missions']), 1)
+
+        import shutil
+        shutil.rmtree(temp_dir)
+
+
+class TestClientNameAdvancedPatterns(unittest.TestCase):
+    """Tests pour patterns avancés d'extraction de noms de clients"""
+
+    def setUp(self):
+        self.parser = LinkedInParser([])
+
+    def test_multiple_patterns_in_title(self):
+        """Plusieurs patterns dans le même titre - capture tout jusqu'au séparateur"""
+        title = "Developer @ Client1 - Mission Lead"
+        client = self.parser._extract_client_name(title)
+        # Le pattern capture jusqu'au tiret
+        self.assertEqual(client, "Client1")
+
+    def test_pattern_at_end_of_title(self):
+        """Pattern à la fin du titre"""
+        title = "Senior Software Engineer @ Airbnb"
+        client = self.parser._extract_client_name(title)
+        self.assertEqual(client, "Airbnb")
+
+    def test_pattern_with_lowercase(self):
+        """Pattern avec minuscules (ne devrait pas extraire)"""
+        title = "developer @ airbnb"
+        client = self.parser._extract_client_name(title)
+        # Pattern exige majuscule initiale
+        self.assertIsNone(client)
+
+    def test_client_name_with_numbers(self):
+        """Nom de client avec numéros (doit commencer par une lettre majuscule)"""
+        test_cases = [
+            ("Developer @ Orange 5G", "Orange 5G"),
+            ("Engineer for Free2Move", "Free2Move"),
+            # 3M commence par un chiffre - pas supporté par le pattern actuel
+            ("Consultant chez 3M France", None),
+        ]
+        for title, expected in test_cases:
+            with self.subTest(title=title):
+                client = self.parser._extract_client_name(title)
+                self.assertEqual(client, expected)
+
+    def test_client_name_very_long(self):
+        """Nom de client très long"""
+        title = "Developer @ Société Internationale de Télécommunications et Technologies Avancées SITTA"
+        client = self.parser._extract_client_name(title)
+        # Devrait extraire le nom complet
+        self.assertIsNotNone(client)
+        self.assertGreater(len(client), 30)
+
+    def test_special_bullet_separators(self):
+        """Séparateurs spéciaux (bullet points, tirets)"""
+        test_cases = [
+            ("Developer @ Google • Tech Stack", "Google"),
+            ("Engineer @ Microsoft - Cloud Division", "Microsoft"),
+            ("Consultant @ Amazon, AWS Team", "Amazon"),
+        ]
+        for title, expected in test_cases:
+            with self.subTest(title=title):
+                client = self.parser._extract_client_name(title)
+                self.assertEqual(client, expected)
+
+
 if __name__ == '__main__':
     # Exécuter les tests avec un output verbeux
     unittest.main(verbosity=2)

@@ -18,7 +18,7 @@ cd backend
 python3 test_consultant_missions.py
 ```
 
-## 📋 Couverture des tests (30 tests)
+## 📋 Couverture des tests (49 tests)
 
 ### 1. **TestClientNameExtraction** (8 tests)
 
@@ -138,15 +138,86 @@ Tests pour les cas limites et scénarios edge.
 
 ---
 
+---
+
+### 6. **TestAdvancedDateEdgeCases** (5 tests)
+
+Tests avancés pour les edge cases de dates.
+
+| Test | Description |
+|------|-------------|
+| `test_same_start_and_end_date` | Position d'un seul mois |
+| `test_very_old_positions` | Positions années 1990 |
+| `test_future_positions` | Positions futures (2025+) |
+| `test_all_positions_active_present` | Plusieurs positions actives simultanément |
+| `test_consecutive_months_no_gap` | Mois consécutifs (Jan-Feb, Feb-Mar) |
+
+---
+
+### 7. **TestCompanyNameEdgeCases** (3 tests)
+
+Tests pour les noms d'entreprises complexes.
+
+| Test | Description |
+|------|-------------|
+| `test_company_with_multiple_spaces` | Espaces multiples dans le nom |
+| `test_company_with_special_chars` | Caractères spéciaux (L'Oréal S.A.) |
+| `test_company_name_empty_or_whitespace` | Noms vides/whitespace |
+
+---
+
+### 8. **TestDescriptionEdgeCases** (3 tests)
+
+Tests pour les descriptions de positions.
+
+| Test | Description |
+|------|-------------|
+| `test_descriptions_equal_length` | Descriptions de longueur égale |
+| `test_both_descriptions_empty` | Les deux descriptions vides |
+| `test_very_long_description` | Description >10000 caractères |
+
+---
+
+### 9. **TestMultipleOverlappingPositions** (2 tests)
+
+Tests pour plusieurs positions qui se chevauchent.
+
+| Test | Description |
+|------|-------------|
+| `test_five_positions_same_company` | 5 positions même ESN (1 + 4 missions) |
+| `test_cascading_overlaps` | Chevauchements en cascade (non-transitif) |
+
+---
+
+### 10. **TestClientNameAdvancedPatterns** (6 tests)
+
+Tests avancés pour l'extraction de noms de clients.
+
+| Test | Description | Comportement |
+|------|-------------|--------------|
+| `test_multiple_patterns_in_title` | Plusieurs keywords | Extrait jusqu'au séparateur |
+| `test_pattern_at_end_of_title` | Pattern en fin de titre | ✅ Supporte |
+| `test_pattern_with_lowercase` | Minuscules (airbnb) | ❌ Exige majuscule |
+| `test_client_name_with_numbers` | Noms avec chiffres | ✅ Orange 5G, ❌ 3M France |
+| `test_client_name_very_long` | Noms très longs (>30 chars) | ✅ Supporte |
+| `test_special_bullet_separators` | Séparateurs •, -, , | ✅ S'arrête correctement |
+
+---
+
 ## 📊 Résultats
 
 ```
-============================== 30 passed ==============================
+============================== 49 passed ==============================
 ✅ TestClientNameExtraction: 8/8 tests passés
 ✅ TestDatesOverlap: 8/8 tests passés
 ✅ TestLinkedInDateConversion: 3/3 tests passés
 ✅ TestConsultantPositionsMerging: 7/7 tests passés
 ✅ TestConsultantMissionsEdgeCases: 4/4 tests passés
+✅ TestAdvancedDateEdgeCases: 5/5 tests passés
+✅ TestCompanyNameEdgeCases: 3/3 tests passés
+✅ TestDescriptionEdgeCases: 3/3 tests passés
+✅ TestMultipleOverlappingPositions: 2/2 tests passés
+✅ TestClientNameAdvancedPatterns: 6/6 tests passés
 ```
 
 ---
