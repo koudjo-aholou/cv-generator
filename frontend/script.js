@@ -11,10 +11,8 @@ const dropZone = document.getElementById('dropZone');
 const browseBtn = document.getElementById('browseBtn');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
-const parseBtn = document.getElementById('parseBtn');
 const photoSection = document.getElementById('photo-section');
-const previewSection = document.getElementById('preview-section');
-const dataPreview = document.getElementById('dataPreview');
+const successSection = document.getElementById('success-section');
 const generateBtn = document.getElementById('generateBtn');
 const resetBtn = document.getElementById('resetBtn');
 const loading = document.getElementById('loading');
@@ -54,8 +52,7 @@ function setupEventListeners() {
     });
 
     // Button events
-    parseBtn.addEventListener('click', parseLinkedInData);
-    generateBtn.addEventListener('click', generatePDF);
+    generateBtn.addEventListener('click', generateCV);
     resetBtn.addEventListener('click', resetApp);
 
     // Photo upload events
@@ -95,7 +92,6 @@ function handleFiles(files) {
 
     selectedFiles = files;
     displayFileList();
-    parseBtn.style.display = 'block';
     photoSection.style.display = 'block';
     hideError();
 
@@ -150,7 +146,6 @@ function removeFile(index) {
 
     if (selectedFiles.length === 0) {
         fileList.innerHTML = '';
-        parseBtn.style.display = 'none';
         photoSection.style.display = 'none';
     } else {
         displayFileList();
@@ -165,8 +160,8 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Parse LinkedIn Data
-async function parseLinkedInData() {
+// Generate CV (Parse and Create PDF in one step)
+async function generateCV() {
     if (selectedFiles.length === 0) {
         showError('Aucun fichier sélectionné');
         return;
@@ -176,105 +171,65 @@ async function parseLinkedInData() {
     hideError();
 
     try {
+        // Step 1: Parse LinkedIn data
         const formData = new FormData();
         selectedFiles.forEach(file => {
             formData.append('files', file);
         });
 
-        const response = await fetch(`${API_URL}/api/parse-linkedin`, {
+        const parseResponse = await fetch(`${API_URL}/api/parse-linkedin`, {
             method: 'POST',
             body: formData
         });
 
-        if (!response.ok) {
+        if (!parseResponse.ok) {
             throw new Error('Erreur lors de l\'analyse des données');
         }
 
-        parsedData = await response.json();
-        displayPreview(parsedData);
-        previewSection.style.display = 'block';
+        parsedData = await parseResponse.json();
 
-        // Scroll to preview
-        previewSection.scrollIntoView({ behavior: 'smooth' });
+        // Step 2: Prepare data with photo if available
+        const dataToSend = { ...parsedData };
+
+        if (photoFile) {
+            const photoBase64 = await fileToBase64(photoFile);
+            dataToSend.photo = photoBase64;
+        }
+
+        // Step 3: Generate PDF
+        const pdfResponse = await fetch(`${API_URL}/api/generate-pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dataToSend)
+        });
+
+        if (!pdfResponse.ok) {
+            throw new Error('Erreur lors de la génération du PDF');
+        }
+
+        // Download the PDF
+        const blob = await pdfResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cv.pdf';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Show success
+        photoSection.style.display = 'none';
+        successSection.style.display = 'block';
+        successSection.scrollIntoView({ behavior: 'smooth' });
 
     } catch (error) {
-        showError('Erreur lors de l\'analyse des fichiers: ' + error.message);
+        showError('Erreur: ' + error.message);
     } finally {
         hideLoading();
     }
-}
-
-// Display Preview
-function displayPreview(data) {
-    let html = '';
-
-    // Profile
-    if (data.profile && data.profile.first_name) {
-        html += `
-            <div class="preview-section">
-                <h3>👤 Profil</h3>
-                <p><strong>Nom:</strong> ${data.profile.first_name} ${data.profile.last_name}</p>
-                ${data.profile.headline ? `<p><strong>Titre:</strong> ${data.profile.headline}</p>` : ''}
-                ${data.profile.email ? `<p><strong>Email:</strong> ${data.profile.email}</p>` : ''}
-                ${data.profile.phone ? `<p><strong>Téléphone:</strong> ${data.profile.phone}</p>` : ''}
-            </div>
-        `;
-    }
-
-    // Positions
-    if (data.positions && data.positions.length > 0) {
-        html += `
-            <div class="preview-section">
-                <h3>💼 Expériences (${data.positions.length})</h3>
-                ${data.positions.slice(0, 3).map(pos => `
-                    <p><strong>${pos.title}</strong> chez ${pos.company}</p>
-                `).join('')}
-                ${data.positions.length > 3 ? `<p><em>... et ${data.positions.length - 3} autres</em></p>` : ''}
-            </div>
-        `;
-    }
-
-    // Education
-    if (data.education && data.education.length > 0) {
-        html += `
-            <div class="preview-section">
-                <h3>🎓 Formation (${data.education.length})</h3>
-                ${data.education.slice(0, 2).map(edu => `
-                    <p><strong>${edu.degree || 'Diplôme'}</strong> - ${edu.school}</p>
-                `).join('')}
-                ${data.education.length > 2 ? `<p><em>... et ${data.education.length - 2} autres</em></p>` : ''}
-            </div>
-        `;
-    }
-
-    // Skills
-    if (data.skills && data.skills.length > 0) {
-        html += `
-            <div class="preview-section">
-                <h3>🛠️ Compétences (${data.skills.length})</h3>
-                <div>
-                    ${data.skills.slice(0, 10).map(skill => `
-                        <span class="skill-tag">${skill}</span>
-                    `).join('')}
-                    ${data.skills.length > 10 ? `<span class="skill-tag">+${data.skills.length - 10} autres</span>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    // Languages
-    if (data.languages && data.languages.length > 0) {
-        html += `
-            <div class="preview-section">
-                <h3>🌍 Langues (${data.languages.length})</h3>
-                ${data.languages.map(lang => `
-                    <p>${lang.name}${lang.proficiency ? ` - ${lang.proficiency}` : ''}</p>
-                `).join('')}
-            </div>
-        `;
-    }
-
-    dataPreview.innerHTML = html || '<p>Aucune donnée trouvée dans les fichiers.</p>';
 }
 
 // Photo Upload Handlers
@@ -319,67 +274,14 @@ function removePhoto() {
     removePhotoBtn.style.display = 'none';
 }
 
-// Generate PDF
-async function generatePDF() {
-    if (!parsedData) {
-        showError('Aucune donnée à générer');
-        return;
-    }
-
-    showLoading();
-    hideError();
-
-    try {
-        // Prepare data with photo if available
-        const dataToSend = { ...parsedData };
-
-        // Add photo if uploaded
-        if (photoFile) {
-            const photoBase64 = await fileToBase64(photoFile);
-            dataToSend.photo = photoBase64;
-        }
-
-        const response = await fetch(`${API_URL}/api/generate-pdf`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(dataToSend)
-        });
-
-        if (!response.ok) {
-            throw new Error('Erreur lors de la génération du PDF');
-        }
-
-        // Download the PDF
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'cv.pdf';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        showSuccess('CV généré avec succès !');
-
-    } catch (error) {
-        showError('Erreur lors de la génération du PDF: ' + error.message);
-    } finally {
-        hideLoading();
-    }
-}
-
 // Reset Application
 function resetApp() {
     selectedFiles = [];
     parsedData = null;
     fileList.innerHTML = '';
     fileInput.value = '';
-    parseBtn.style.display = 'none';
     photoSection.style.display = 'none';
-    previewSection.style.display = 'none';
+    successSection.style.display = 'none';
     removePhoto();
     hideError();
 
