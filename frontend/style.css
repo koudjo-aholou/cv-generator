@@ -105,6 +105,73 @@ ol li ul li {
     margin-bottom: 1.5rem;
 }
 
+/* Required Files Info */
+.required-files-info {
+    background: var(--secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.required-files-info h3 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.file-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.file-badge.required {
+    background: #e3f2fd;
+    border: 2px solid #2196f3;
+    color: #1565c0;
+}
+
+.file-badge.optional {
+    background: #f3e5f5;
+    border: 2px solid #ce93d8;
+    color: #7b1fa2;
+}
+
+.files-note {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    line-height: 1.8;
+}
+
+.required-badge {
+    color: #2196f3;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.optional-badge {
+    color: #ce93d8;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
 /* Drop Zone */
 .drop-zone {
     border: 2px dashed var(--border-color);
@@ -617,6 +684,14 @@ footer {
 
     .card {
         padding: 1.5rem;
+    }
+
+    .files-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .required-files-info {
+        padding: 1rem;
     }
 
     .action-buttons {
