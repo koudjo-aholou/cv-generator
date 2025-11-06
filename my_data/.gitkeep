@@ -1,0 +1,2 @@
+# Ce fichier permet de tracker le dossier my_data dans git
+# Tout autre fichier dans ce dossier sera ignoré par git

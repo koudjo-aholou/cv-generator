@@ -33,6 +33,11 @@ Thumbs.db
 /tmp/
 /temp/
 
+# User data directory (for personal LinkedIn CSV files)
+my_data/*
+!my_data/.gitkeep
+!my_data/README.md
+
 # Logs
 *.log
 
