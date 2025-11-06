@@ -1,9 +1,11 @@
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
+from reportlab.lib.units import cm, mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether, PageBreak, HRFlowable
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
 from reportlab.lib import colors
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import os
 import tempfile
 
@@ -17,38 +19,53 @@ class CVGenerator:
 
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
-        # Title style
+
+        # Name style - Bold and large
         self.styles.add(ParagraphStyle(
-            name='CustomTitle',
+            name='Name',
             parent=self.styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor('#1a1a1a'),
-            spaceAfter=6,
-            alignment=TA_CENTER
+            fontSize=28,
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=4,
+            spaceBefore=0,
+            alignment=TA_LEFT,
+            fontName='Helvetica-Bold',
+            leading=32
         ))
 
-        # Subtitle style
+        # Headline style
         self.styles.add(ParagraphStyle(
-            name='CustomSubtitle',
+            name='Headline',
             parent=self.styles['Normal'],
-            fontSize=12,
-            textColor=colors.HexColor('#666666'),
-            spaceAfter=12,
-            alignment=TA_CENTER
+            fontSize=13,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=8,
+            fontName='Helvetica',
+            leading=16
         ))
 
-        # Section header style
+        # Contact style
+        self.styles.add(ParagraphStyle(
+            name='Contact',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#7f8c8d'),
+            spaceAfter=16,
+            fontName='Helvetica',
+            leading=14
+        ))
+
+        # Section header style - Clean with underline
         self.styles.add(ParagraphStyle(
             name='SectionHeader',
             parent=self.styles['Heading2'],
             fontSize=14,
-            textColor=colors.HexColor('#0073b1'),
-            spaceAfter=8,
-            spaceBefore=12,
-            borderWidth=1,
-            borderColor=colors.HexColor('#0073b1'),
-            borderPadding=5,
-            backColor=colors.HexColor('#f3f6f8')
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=10,
+            spaceBefore=16,
+            fontName='Helvetica-Bold',
+            leading=18,
+            textTransform='uppercase'
         ))
 
         # Job title style
@@ -56,9 +73,10 @@ class CVGenerator:
             name='JobTitle',
             parent=self.styles['Normal'],
             fontSize=11,
-            textColor=colors.HexColor('#1a1a1a'),
-            spaceAfter=2,
-            fontName='Helvetica-Bold'
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=3,
+            fontName='Helvetica-Bold',
+            leading=14
         ))
 
         # Company style
@@ -66,17 +84,56 @@ class CVGenerator:
             name='Company',
             parent=self.styles['Normal'],
             fontSize=10,
-            textColor=colors.HexColor('#0073b1'),
-            spaceAfter=2
+            textColor=colors.HexColor('#3498db'),
+            spaceAfter=3,
+            fontName='Helvetica-Oblique',
+            leading=13
         ))
 
-        # Date style
+        # Date/Location style
         self.styles.add(ParagraphStyle(
-            name='DateStyle',
+            name='DateLocation',
             parent=self.styles['Normal'],
             fontSize=9,
-            textColor=colors.HexColor('#666666'),
-            spaceAfter=4
+            textColor=colors.HexColor('#95a5a6'),
+            spaceAfter=6,
+            fontName='Helvetica',
+            leading=12
+        ))
+
+        # Description style
+        self.styles.add(ParagraphStyle(
+            name='Description',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=14,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Summary style
+        self.styles.add(ParagraphStyle(
+            name='Summary',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=15,
+            alignment=TA_JUSTIFY
+        ))
+
+        # Skill item style
+        self.styles.add(ParagraphStyle(
+            name='SkillItem',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=13
         ))
 
     def generate(self):
@@ -86,14 +143,14 @@ class CVGenerator:
         pdf_path = temp_file.name
         temp_file.close()
 
-        # Create PDF
+        # Create PDF with better margins
         doc = SimpleDocTemplate(
             pdf_path,
             pagesize=A4,
-            rightMargin=2*cm,
-            leftMargin=2*cm,
-            topMargin=2*cm,
-            bottomMargin=2*cm
+            rightMargin=20*mm,
+            leftMargin=20*mm,
+            topMargin=20*mm,
+            bottomMargin=20*mm
         )
 
         # Build content
@@ -131,6 +188,19 @@ class CVGenerator:
 
         return pdf_path
 
+    def _create_section_header(self, title):
+        """Create a section header with horizontal line"""
+        elements = []
+        elements.append(Paragraph(title.upper(), self.styles['SectionHeader']))
+        elements.append(HRFlowable(
+            width="100%",
+            thickness=1,
+            color=colors.HexColor('#3498db'),
+            spaceBefore=0,
+            spaceAfter=10
+        ))
+        return elements
+
     def _build_header(self):
         """Build header section with name and contact info"""
         elements = []
@@ -139,26 +209,31 @@ class CVGenerator:
         # Full name
         full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
         if full_name:
-            elements.append(Paragraph(full_name, self.styles['CustomTitle']))
+            elements.append(Paragraph(full_name, self.styles['Name']))
 
         # Headline
         if profile.get('headline'):
-            elements.append(Paragraph(profile['headline'], self.styles['CustomSubtitle']))
+            elements.append(Paragraph(profile['headline'], self.styles['Headline']))
 
-        # Contact info
-        contact_parts = []
+        # Contact info on multiple lines for better readability
+        contact_lines = []
+
+        line1_parts = []
         if profile.get('email'):
-            contact_parts.append(profile['email'])
+            line1_parts.append(f"✉ {profile['email']}")
         if profile.get('phone'):
-            contact_parts.append(profile['phone'])
+            line1_parts.append(f"☎ {profile['phone']}")
+
+        if line1_parts:
+            contact_lines.append(' • '.join(line1_parts))
+
         if profile.get('address'):
-            contact_parts.append(profile['address'])
+            contact_lines.append(f"📍 {profile['address']}")
 
-        if contact_parts:
-            contact_text = ' | '.join(contact_parts)
-            elements.append(Paragraph(contact_text, self.styles['CustomSubtitle']))
+        for line in contact_lines:
+            elements.append(Paragraph(line, self.styles['Contact']))
 
-        elements.append(Spacer(1, 0.5*cm))
+        elements.append(Spacer(1, 4*mm))
 
         return elements
 
@@ -167,9 +242,10 @@ class CVGenerator:
         elements = []
         profile = self.data.get('profile', {})
 
-        elements.append(Paragraph("À PROPOS", self.styles['SectionHeader']))
-        elements.append(Paragraph(profile['summary'], self.styles['Normal']))
-        elements.append(Spacer(1, 0.3*cm))
+        elements.extend(self._create_section_header("À Propos"))
+
+        summary_para = Paragraph(profile['summary'], self.styles['Summary'])
+        elements.append(KeepTogether([summary_para, Spacer(1, 4*mm)]))
 
         return elements
 
@@ -177,16 +253,18 @@ class CVGenerator:
         """Build experience section"""
         elements = []
 
-        elements.append(Paragraph("EXPÉRIENCE PROFESSIONNELLE", self.styles['SectionHeader']))
+        elements.extend(self._create_section_header("Expérience Professionnelle"))
 
-        for position in self.data.get('positions', []):
+        for i, position in enumerate(self.data.get('positions', [])):
+            position_elements = []
+
             # Job title
             if position.get('title'):
-                elements.append(Paragraph(position['title'], self.styles['JobTitle']))
+                position_elements.append(Paragraph(position['title'], self.styles['JobTitle']))
 
             # Company
             if position.get('company'):
-                elements.append(Paragraph(position['company'], self.styles['Company']))
+                position_elements.append(Paragraph(position['company'], self.styles['Company']))
 
             # Dates and location
             date_location = []
@@ -196,23 +274,31 @@ class CVGenerator:
                 date_location.append(position['location'])
 
             if date_location:
-                elements.append(Paragraph(' | '.join(date_location), self.styles['DateStyle']))
+                position_elements.append(Paragraph(' • '.join(date_location), self.styles['DateLocation']))
 
             # Description
             if position.get('description'):
-                elements.append(Paragraph(position['description'], self.styles['Normal']))
+                position_elements.append(Paragraph(position['description'], self.styles['Description']))
 
-            elements.append(Spacer(1, 0.3*cm))
+            # Add spacing between positions
+            if i < len(self.data.get('positions', [])) - 1:
+                position_elements.append(Spacer(1, 4*mm))
 
+            # Keep each position together
+            elements.append(KeepTogether(position_elements))
+
+        elements.append(Spacer(1, 2*mm))
         return elements
 
     def _build_education(self):
         """Build education section"""
         elements = []
 
-        elements.append(Paragraph("FORMATION", self.styles['SectionHeader']))
+        elements.extend(self._create_section_header("Formation"))
 
-        for edu in self.data.get('education', []):
+        for i, edu in enumerate(self.data.get('education', [])):
+            edu_elements = []
+
             # Degree
             degree_text = []
             if edu.get('degree'):
@@ -221,11 +307,11 @@ class CVGenerator:
                 degree_text.append(edu['field_of_study'])
 
             if degree_text:
-                elements.append(Paragraph(' - '.join(degree_text), self.styles['JobTitle']))
+                edu_elements.append(Paragraph(' - '.join(degree_text), self.styles['JobTitle']))
 
             # School
             if edu.get('school'):
-                elements.append(Paragraph(edu['school'], self.styles['Company']))
+                edu_elements.append(Paragraph(edu['school'], self.styles['Company']))
 
             # Dates
             date_range = []
@@ -235,63 +321,103 @@ class CVGenerator:
                 date_range.append(edu['end_date'])
 
             if date_range:
-                elements.append(Paragraph(' - '.join(date_range), self.styles['DateStyle']))
+                edu_elements.append(Paragraph(' - '.join(date_range), self.styles['DateLocation']))
 
-            elements.append(Spacer(1, 0.3*cm))
+            # Add spacing between education entries
+            if i < len(self.data.get('education', [])) - 1:
+                edu_elements.append(Spacer(1, 4*mm))
 
+            # Keep each education entry together
+            elements.append(KeepTogether(edu_elements))
+
+        elements.append(Spacer(1, 2*mm))
         return elements
 
     def _build_skills(self):
-        """Build skills section"""
+        """Build skills section in a grid layout"""
         elements = []
 
-        elements.append(Paragraph("COMPÉTENCES", self.styles['SectionHeader']))
+        elements.extend(self._create_section_header("Compétences"))
 
         skills = self.data.get('skills', [])
-        skills_text = ' • '.join(skills)
-        elements.append(Paragraph(skills_text, self.styles['Normal']))
-        elements.append(Spacer(1, 0.3*cm))
 
+        # Create a 2-column or 3-column layout based on number of skills
+        num_cols = 3 if len(skills) > 10 else 2
+
+        # Group skills into columns
+        skill_rows = []
+        for i in range(0, len(skills), num_cols):
+            row = []
+            for j in range(num_cols):
+                if i + j < len(skills):
+                    row.append(Paragraph(f"• {skills[i + j]}", self.styles['SkillItem']))
+                else:
+                    row.append(Paragraph("", self.styles['SkillItem']))
+            skill_rows.append(row)
+
+        # Create table
+        if skill_rows:
+            skill_table = Table(skill_rows, colWidths=[170*mm/num_cols]*num_cols)
+            skill_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+                ('TOPPADDING', (0, 0), (-1, -1), 1),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+            ]))
+            elements.append(skill_table)
+
+        elements.append(Spacer(1, 2*mm))
         return elements
 
     def _build_languages(self):
         """Build languages section"""
         elements = []
 
-        elements.append(Paragraph("LANGUES", self.styles['SectionHeader']))
+        elements.extend(self._create_section_header("Langues"))
 
+        lang_items = []
         for lang in self.data.get('languages', []):
-            lang_text = lang.get('name', '')
+            lang_text = f"<b>{lang.get('name', '')}</b>"
             if lang.get('proficiency'):
                 lang_text += f" - {lang['proficiency']}"
-            elements.append(Paragraph(lang_text, self.styles['Normal']))
+            lang_items.append(Paragraph(lang_text, self.styles['SkillItem']))
 
-        elements.append(Spacer(1, 0.3*cm))
+        if lang_items:
+            elements.append(KeepTogether(lang_items))
 
+        elements.append(Spacer(1, 2*mm))
         return elements
 
     def _build_certifications(self):
         """Build certifications section"""
         elements = []
 
-        elements.append(Paragraph("CERTIFICATIONS", self.styles['SectionHeader']))
+        elements.extend(self._create_section_header("Certifications"))
 
-        for cert in self.data.get('certifications', []):
+        for i, cert in enumerate(self.data.get('certifications', [])):
+            cert_elements = []
+
             # Certification name
             if cert.get('name'):
-                elements.append(Paragraph(cert['name'], self.styles['JobTitle']))
+                cert_elements.append(Paragraph(cert['name'], self.styles['JobTitle']))
 
             # Authority
             if cert.get('authority'):
-                elements.append(Paragraph(cert['authority'], self.styles['Company']))
+                cert_elements.append(Paragraph(cert['authority'], self.styles['Company']))
 
             # Date
             if cert.get('start_date'):
                 date_text = cert['start_date']
                 if cert.get('end_date'):
                     date_text += f" - {cert['end_date']}"
-                elements.append(Paragraph(date_text, self.styles['DateStyle']))
+                cert_elements.append(Paragraph(date_text, self.styles['DateLocation']))
 
-            elements.append(Spacer(1, 0.2*cm))
+            # Add spacing between certifications
+            if i < len(self.data.get('certifications', [])) - 1:
+                cert_elements.append(Spacer(1, 3*mm))
+
+            # Keep each certification together
+            elements.append(KeepTogether(cert_elements))
 
         return elements
