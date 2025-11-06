@@ -569,6 +569,8 @@ function checkSectionHasData(section) {
 
 // Populate section order with drag and drop
 function populateSectionOrder() {
+    if (!sectionOrderList) return;
+
     sectionOrderList.innerHTML = '';
 
     const sectionNames = {
@@ -687,14 +689,18 @@ function moveSectionDown(index) {
 
 // Populate experience items with checkboxes
 function populateExperienceItems() {
+    if (!experienceItemsList) return;
+
     experienceItemsList.innerHTML = '';
 
     if (!parsedData.positions || parsedData.positions.length === 0) {
-        document.getElementById('experience-items-section').style.display = 'none';
+        const section = document.getElementById('experience-items-section');
+        if (section) section.style.display = 'none';
         return;
     }
 
-    document.getElementById('experience-items-section').style.display = 'block';
+    const section = document.getElementById('experience-items-section');
+    if (section) section.style.display = 'block';
 
     parsedData.positions.forEach((position, index) => {
         const item = document.createElement('label');
@@ -728,14 +734,18 @@ function toggleExperienceItem(index, checked) {
 
 // Populate education items with checkboxes
 function populateEducationItems() {
+    if (!educationItemsList) return;
+
     educationItemsList.innerHTML = '';
 
     if (!parsedData.education || parsedData.education.length === 0) {
-        document.getElementById('education-items-section').style.display = 'none';
+        const section = document.getElementById('education-items-section');
+        if (section) section.style.display = 'none';
         return;
     }
 
-    document.getElementById('education-items-section').style.display = 'block';
+    const section = document.getElementById('education-items-section');
+    if (section) section.style.display = 'block';
 
     parsedData.education.forEach((edu, index) => {
         const item = document.createElement('label');
@@ -773,6 +783,8 @@ function toggleEducationItem(index, checked) {
 function populateProfileSummaryEditor() {
     const section = document.getElementById('profile-summary-section');
     const textarea = document.getElementById('profile-summary');
+
+    if (!section || !textarea) return;
 
     if (!parsedData.profile || !parsedData.profile.summary) {
         section.style.display = 'none';
@@ -841,6 +853,8 @@ function addNewExperience() {
 function populateExperienceEditor() {
     const section = document.getElementById('experience-editor-section');
     const editorContainer = document.getElementById('experience-editor');
+
+    if (!section || !editorContainer) return;
 
     if (!parsedData.positions || parsedData.positions.length === 0) {
         section.style.display = 'none';
@@ -1050,6 +1064,8 @@ function populateEducationEditor() {
     const section = document.getElementById('education-editor-section');
     const editorContainer = document.getElementById('education-editor');
 
+    if (!section || !editorContainer) return;
+
     if (!parsedData.education || parsedData.education.length === 0) {
         section.style.display = 'none';
         return;
@@ -1252,6 +1268,8 @@ function populateSkillsSelector() {
     const selectorContainer = document.getElementById('skills-selector');
     const searchInput = document.getElementById('skills-search');
 
+    if (!section || !selectorContainer) return;
+
     if (!parsedData.skills || parsedData.skills.length === 0) {
         section.style.display = 'none';
         return;
@@ -1374,6 +1392,8 @@ function populateLanguagesEditor() {
     const section = document.getElementById('languages-editor-section');
     const editorContainer = document.getElementById('languages-editor');
 
+    if (!section || !editorContainer) return;
+
     if (!parsedData.languages || parsedData.languages.length === 0) {
         section.style.display = 'none';
         return;
@@ -1488,6 +1508,8 @@ function addNewCertification() {
 function populateCertificationsEditor() {
     const section = document.getElementById('certifications-editor-section');
     const editorContainer = document.getElementById('certifications-editor');
+
+    if (!section || !editorContainer) return;
 
     if (!parsedData.certifications || parsedData.certifications.length === 0) {
         section.style.display = 'none';
