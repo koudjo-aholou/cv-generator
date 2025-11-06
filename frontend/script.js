@@ -12,6 +12,7 @@ const browseBtn = document.getElementById('browseBtn');
 const fileInput = document.getElementById('fileInput');
 const fileList = document.getElementById('fileList');
 const parseBtn = document.getElementById('parseBtn');
+const photoSection = document.getElementById('photo-section');
 const previewSection = document.getElementById('preview-section');
 const dataPreview = document.getElementById('dataPreview');
 const generateBtn = document.getElementById('generateBtn');
@@ -95,7 +96,11 @@ function handleFiles(files) {
     selectedFiles = files;
     displayFileList();
     parseBtn.style.display = 'block';
+    photoSection.style.display = 'block';
     hideError();
+
+    // Scroll to photo section
+    photoSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function displayFileList() {
@@ -146,6 +151,7 @@ function removeFile(index) {
     if (selectedFiles.length === 0) {
         fileList.innerHTML = '';
         parseBtn.style.display = 'none';
+        photoSection.style.display = 'none';
     } else {
         displayFileList();
     }
@@ -372,6 +378,7 @@ function resetApp() {
     fileList.innerHTML = '';
     fileInput.value = '';
     parseBtn.style.display = 'none';
+    photoSection.style.display = 'none';
     previewSection.style.display = 'none';
     removePhoto();
     hideError();
