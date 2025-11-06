@@ -33,6 +33,10 @@ class LinkedInParser:
                 self._parse_languages(filepath)
             elif 'certification' in filename:
                 self._parse_certifications(filepath)
+            elif 'email' in filename:
+                self._parse_email_addresses(filepath)
+            elif 'phone' in filename:
+                self._parse_phone_numbers(filepath)
 
         return self.data
 
@@ -141,6 +145,43 @@ class LinkedInParser:
                     self.data['certifications'].append(cert)
         except Exception as e:
             print(f"Error parsing certifications: {e}")
+
+    def _parse_email_addresses(self, filepath):
+        """Parse Email Addresses.csv"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                emails = []
+                for row in reader:
+                    email = row.get('Email Address', '')
+                    if email:
+                        emails.append(email)
+
+                # Use the first email if profile doesn't have one
+                if emails and not self.data['profile'].get('email'):
+                    self.data['profile']['email'] = emails[0]
+
+        except Exception as e:
+            print(f"Error parsing email addresses: {e}")
+
+    def _parse_phone_numbers(self, filepath):
+        """Parse PhoneNumbers.csv and Whatsapp Phone Numbers.csv"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                phones = []
+                for row in reader:
+                    # Try different possible column names
+                    phone = row.get('Phone Number', '') or row.get('PhoneNumber', '') or row.get('Number', '')
+                    if phone:
+                        phones.append(phone)
+
+                # Use the first phone number if profile doesn't have one
+                if phones and not self.data['profile'].get('phone'):
+                    self.data['profile']['phone'] = phones[0]
+
+        except Exception as e:
+            print(f"Error parsing phone numbers: {e}")
 
     def _format_date_range(self, start_date, end_date):
         """Format date range for display (e.g., '2020-01-01 - 2023-12-31' or '2020-01-01 - Présent')"""
