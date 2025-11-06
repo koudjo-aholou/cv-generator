@@ -46,7 +46,7 @@ class LinkedInParser:
             with open(filepath, 'r', encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    self.data['profile'] = {
+                    profile_data = {
                         'first_name': row.get('First Name', ''),
                         'last_name': row.get('Last Name', ''),
                         'maiden_name': row.get('Maiden Name', ''),
@@ -59,6 +59,14 @@ class LinkedInParser:
                         'birth_date': row.get('Birth Date', ''),
                         'websites': row.get('Websites', '').split(',') if row.get('Websites') else []
                     }
+
+                    # Preserve existing email/phone if already set from Email Addresses.csv or PhoneNumbers.csv
+                    if self.data['profile'].get('email'):
+                        profile_data['email'] = self.data['profile']['email']
+                    if self.data['profile'].get('phone'):
+                        profile_data['phone'] = self.data['profile']['phone']
+
+                    self.data['profile'] = profile_data
                     break  # Only first row
         except Exception as e:
             print(f"Error parsing profile: {e}")
@@ -166,11 +174,11 @@ class LinkedInParser:
                         emails.append(email)
 
                 # Use primary email first, otherwise first email
-                if not self.data['profile'].get('email'):
-                    if primary_email:
-                        self.data['profile']['email'] = primary_email
-                    elif emails:
-                        self.data['profile']['email'] = emails[0]
+                # Always override existing email from Profile.csv if we have one from Email Addresses.csv
+                if primary_email:
+                    self.data['profile']['email'] = primary_email
+                elif emails:
+                    self.data['profile']['email'] = emails[0]
 
         except Exception as e:
             print(f"Error parsing email addresses: {e}")
@@ -201,11 +209,11 @@ class LinkedInParser:
                         phones.append(phone)
 
                 # Use mobile phone first, otherwise first phone
-                if not self.data['profile'].get('phone'):
-                    if mobile_phone:
-                        self.data['profile']['phone'] = mobile_phone
-                    elif phones:
-                        self.data['profile']['phone'] = phones[0]
+                # Always override existing phone from Profile.csv if we have one from PhoneNumbers.csv
+                if mobile_phone:
+                    self.data['profile']['phone'] = mobile_phone
+                elif phones:
+                    self.data['profile']['phone'] = phones[0]
 
         except Exception as e:
             print(f"Error parsing phone numbers: {e}")
