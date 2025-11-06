@@ -26,32 +26,53 @@ class CVGenerator:
         def remove_emoji(text):
             if not isinstance(text, str):
                 return text
-            # Pattern pour détecter les emojis et autres symboles Unicode problématiques
-            # Inclut les emoji, symboles, pictogrammes, etc.
+
+            # Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
+            # Cette approche couvre toutes les plages d'emojis Unicode connues
             emoji_pattern = re.compile(
                 "["
                 "\U0001F600-\U0001F64F"  # emoticons
-                "\U0001F300-\U0001F5FF"  # symbols & pictographs
+                "\U0001F300-\U0001F5FF"  # symbols & pictographs (inclut 🎉 🔄 🗄️)
                 "\U0001F680-\U0001F6FF"  # transport & map symbols
                 "\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                "\U00002702-\U000027B0"  # dingbats
-                "\U000024C2-\U0001F251"
-                "\U0001F900-\U0001F9FF"  # supplemental symbols
+                "\U0001F700-\U0001F77F"  # alchemical symbols
+                "\U0001F780-\U0001F7FF"  # geometric shapes extended
+                "\U0001F800-\U0001F8FF"  # supplemental arrows-C
+                "\U0001F900-\U0001F9FF"  # supplemental symbols (inclut 🤖)
                 "\U0001FA00-\U0001FA6F"  # extended symbols
-                "\U00002600-\U000026FF"  # miscellaneous symbols (inclut ☎ ✉ ✓ ★ etc.)
+                "\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
+                "\U00002600-\U000026FF"  # miscellaneous symbols (inclut ⚡)
+                "\U00002700-\U000027BF"  # dingbats
+                "\U00002300-\U000023FF"  # miscellaneous technical
+                "\U00002B00-\U00002BFF"  # miscellaneous symbols and arrows
+                "\U00003000-\U0000303F"  # CJK symbols and punctuation
+                "\U0000FE00-\U0000FE0F"  # variation selectors (modificateurs d'emojis)
+                "\U0000FF00-\U0000FFEF"  # halfwidth and fullwidth forms
                 "\U00002000-\U0000206F"  # general punctuation
                 "\U00002190-\U000021FF"  # arrows
                 "\U00002300-\U000023FF"  # miscellaneous technical
-                "\U00002B00-\U00002BFF"  # miscellaneous symbols and arrows
+                "\U00002460-\U000024FF"  # enclosed alphanumerics
+                "\U00002500-\U000025FF"  # box drawing
+                "\U00002600-\U000027BF"  # miscellaneous symbols and dingbats
+                "\U00002900-\U000029FF"  # supplemental arrows-B
+                "\U00002A00-\U00002AFF"  # supplemental mathematical operators
+                "\U00003200-\U000032FF"  # enclosed CJK letters and months
+                "\U0000E000-\U0000F8FF"  # private use area
                 "\u2022"  # bullet point •
                 "\u2023"  # triangular bullet ‣
                 "\u25E6"  # white bullet ◦
                 "\u2043"  # hyphen bullet ⁃
                 "\u2219"  # bullet operator ∙
+                "\u00A0"  # non-breaking space
                 "]+",
                 flags=re.UNICODE
             )
-            return emoji_pattern.sub('', text).strip()
+
+            # Nettoyer le texte et gérer les espaces multiples
+            cleaned = emoji_pattern.sub(' ', text)
+            # Réduire les espaces multiples en un seul
+            cleaned = re.sub(r'\s+', ' ', cleaned)
+            return cleaned.strip()
 
         def clean_dict(d):
             """Recursively clean emojis from dictionary values"""
