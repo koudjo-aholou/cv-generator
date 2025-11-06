@@ -198,7 +198,7 @@ Tests avancés pour l'extraction de noms de clients.
 | `test_multiple_patterns_in_title` | Plusieurs keywords | Extrait jusqu'au séparateur |
 | `test_pattern_at_end_of_title` | Pattern en fin de titre | ✅ Supporte |
 | `test_pattern_with_lowercase` | Minuscules (airbnb) | ❌ Exige majuscule |
-| `test_client_name_with_numbers` | Noms avec chiffres | ✅ Orange 5G, ❌ 3M France |
+| `test_client_name_with_numbers` | Noms avec chiffres | ✅ Orange 5G, ✅ 3M France, ✅ 42 |
 | `test_client_name_very_long` | Noms très longs (>30 chars) | ✅ Supporte |
 | `test_special_bullet_separators` | Séparateurs •, -, , | ✅ S'arrête correctement |
 

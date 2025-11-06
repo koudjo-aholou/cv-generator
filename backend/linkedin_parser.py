@@ -362,12 +362,12 @@ class LinkedInParser:
             return None
 
         # Pattern: "@ ClientName" or "for ClientName" or "chez ClientName"
-        # Support French accents and special characters in client names
+        # Support French accents, special characters, and names starting with numbers (3M, 42)
         import re
         patterns = [
-            r'@\s*([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # @ Aircall, @ Société Générale
-            r'for\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # for Aircall, for Société Générale
-            r'chez\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)'  # chez Aircall, chez Société Générale
+            r'@\s*([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # @ Aircall, @ 3M, @ Société Générale
+            r'for\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # for Aircall, for 3M
+            r'chez\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)'  # chez Aircall, chez 3M
         ]
 
         for pattern in patterns:

@@ -766,12 +766,12 @@ class TestClientNameAdvancedPatterns(unittest.TestCase):
         self.assertIsNone(client)
 
     def test_client_name_with_numbers(self):
-        """Nom de client avec numéros (doit commencer par une lettre majuscule)"""
+        """Nom de client avec numéros (supporte noms commençant par chiffre)"""
         test_cases = [
             ("Developer @ Orange 5G", "Orange 5G"),
             ("Engineer for Free2Move", "Free2Move"),
-            # 3M commence par un chiffre - pas supporté par le pattern actuel
-            ("Consultant chez 3M France", None),
+            ("Consultant chez 3M France", "3M France"),  # ✅ Maintenant supporté
+            ("Developer @ 42", "42"),  # Nom purement numérique
         ]
         for title, expected in test_cases:
             with self.subTest(title=title):
