@@ -17,7 +17,8 @@ class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
 
     def __init__(self, data, config=None):
-        self.data = data
+        # Clean emojis from data before storing
+        self.data = self._clean_emoji_from_data(data)
         self.config = config or {}
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
