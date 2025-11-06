@@ -290,7 +290,7 @@ async function parseDataForStep2() {
             formData.append('photo', photoFile);
         }
 
-        const response = await fetch(`${API_URL}/api/parse`, {
+        const response = await fetch(`${API_URL}/api/parse-linkedin`, {
             method: 'POST',
             body: formData
         });
