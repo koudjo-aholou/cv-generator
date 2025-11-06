@@ -9,6 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import os
 import tempfile
 import base64
+import re
 from io import BytesIO
 from PIL import Image as PILImage
 
@@ -20,6 +21,72 @@ class CVGenerator:
         self.config = config or {}
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+
+    def _clean_emoji_from_data(self, data):
+        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font"""
+        def remove_emoji(text):
+            if not isinstance(text, str):
+                return text
+
+            # Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
+            # Cette approche couvre toutes les plages d'emojis Unicode connues
+            emoji_pattern = re.compile(
+                "["
+                "\U0001F600-\U0001F64F"  # emoticons
+                "\U0001F300-\U0001F5FF"  # symbols & pictographs (inclut 🎉 🔄 🗄️)
+                "\U0001F680-\U0001F6FF"  # transport & map symbols
+                "\U0001F1E0-\U0001F1FF"  # flags (iOS)
+                "\U0001F700-\U0001F77F"  # alchemical symbols
+                "\U0001F780-\U0001F7FF"  # geometric shapes extended
+                "\U0001F800-\U0001F8FF"  # supplemental arrows-C
+                "\U0001F900-\U0001F9FF"  # supplemental symbols (inclut 🤖)
+                "\U0001FA00-\U0001FA6F"  # extended symbols
+                "\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
+                "\U00002600-\U000026FF"  # miscellaneous symbols (inclut ⚡)
+                "\U00002700-\U000027BF"  # dingbats
+                "\U00002300-\U000023FF"  # miscellaneous technical
+                "\U00002B00-\U00002BFF"  # miscellaneous symbols and arrows
+                "\U00003000-\U0000303F"  # CJK symbols and punctuation
+                "\U0000FE00-\U0000FE0F"  # variation selectors (modificateurs d'emojis)
+                "\U0000FF00-\U0000FFEF"  # halfwidth and fullwidth forms
+                "\U00002000-\U0000206F"  # general punctuation
+                "\U00002190-\U000021FF"  # arrows
+                "\U00002300-\U000023FF"  # miscellaneous technical
+                "\U00002460-\U000024FF"  # enclosed alphanumerics
+                "\U00002500-\U000025FF"  # box drawing
+                "\U00002600-\U000027BF"  # miscellaneous symbols and dingbats
+                "\U00002900-\U000029FF"  # supplemental arrows-B
+                "\U00002A00-\U00002AFF"  # supplemental mathematical operators
+                "\U00003200-\U000032FF"  # enclosed CJK letters and months
+                "\U0000E000-\U0000F8FF"  # private use area
+                "\u2022"  # bullet point •
+                "\u2023"  # triangular bullet ‣
+                "\u25E6"  # white bullet ◦
+                "\u2043"  # hyphen bullet ⁃
+                "\u2219"  # bullet operator ∙
+                "\u00A0"  # non-breaking space
+                "]+",
+                flags=re.UNICODE
+            )
+
+            # Nettoyer le texte et gérer les espaces multiples
+            cleaned = emoji_pattern.sub(' ', text)
+            # Réduire les espaces multiples en un seul
+            cleaned = re.sub(r'\s+', ' ', cleaned)
+            return cleaned.strip()
+
+        def clean_dict(d):
+            """Recursively clean emojis from dictionary values"""
+            if isinstance(d, dict):
+                return {k: clean_dict(v) for k, v in d.items()}
+            elif isinstance(d, list):
+                return [clean_dict(item) for item in d]
+            elif isinstance(d, str):
+                return remove_emoji(d)
+            else:
+                return d
+
+        return clean_dict(data)
 
     def _setup_custom_styles(self):
         """Setup custom paragraph styles"""
@@ -240,15 +307,15 @@ class CVGenerator:
 
             line1_parts = []
             if profile.get('email'):
-                line1_parts.append(f"✉ {profile['email']}")
+                line1_parts.append(f"Email: {profile['email']}")
             if profile.get('phone'):
-                line1_parts.append(f"☎ {profile['phone']}")
+                line1_parts.append(f"Tel: {profile['phone']}")
 
             if line1_parts:
-                contact_lines.append(' • '.join(line1_parts))
+                contact_lines.append(' | '.join(line1_parts))
 
             if profile.get('address'):
-                contact_lines.append(f"📍 {profile['address']}")
+                contact_lines.append(f"Adresse: {profile['address']}")
 
             for line in contact_lines:
                 info_elements.append(Paragraph(line, self.styles['Contact']))
@@ -290,15 +357,15 @@ class CVGenerator:
 
             line1_parts = []
             if profile.get('email'):
-                line1_parts.append(f"✉ {profile['email']}")
+                line1_parts.append(f"Email: {profile['email']}")
             if profile.get('phone'):
-                line1_parts.append(f"☎ {profile['phone']}")
+                line1_parts.append(f"Tel: {profile['phone']}")
 
             if line1_parts:
-                contact_lines.append(' • '.join(line1_parts))
+                contact_lines.append(' | '.join(line1_parts))
 
             if profile.get('address'):
-                contact_lines.append(f"📍 {profile['address']}")
+                contact_lines.append(f"Adresse: {profile['address']}")
 
             for line in contact_lines:
                 elements.append(Paragraph(line, self.styles['Contact']))
@@ -430,7 +497,7 @@ class CVGenerator:
                 date_location.append(position['location'])
 
             if date_location:
-                position_elements.append(Paragraph(' • '.join(date_location), self.styles['DateLocation']))
+                position_elements.append(Paragraph(' | '.join(date_location), self.styles['DateLocation']))
 
             # Description
             if position.get('description'):
@@ -448,9 +515,11 @@ class CVGenerator:
 
     def _build_education(self):
         """Build education section"""
-        elements = []
+        all_elements = []
+        section_content = []
 
-        elements.extend(self._create_section_header("Formation"))
+        # Add section header
+        section_content.extend(self._create_section_header("Formation"))
 
         # Get visible education configuration
         visible_indices = self.config.get('education_visible')
@@ -493,11 +562,16 @@ class CVGenerator:
             if i < len(education) - 1:
                 edu_elements.append(Spacer(1, 4*mm))
 
-            # Keep each education entry together
-            elements.append(KeepTogether(edu_elements))
+            # Add each education entry to section content
+            section_content.extend(edu_elements)
 
-        elements.append(Spacer(1, 2*mm))
-        return elements
+        section_content.append(Spacer(1, 2*mm))
+
+        # Keep entire education section together
+        if section_content:
+            all_elements.append(KeepTogether(section_content))
+
+        return all_elements
 
     def _build_skills(self):
         """Build skills section in a grid layout"""
@@ -518,7 +592,7 @@ class CVGenerator:
             row = []
             for j in range(num_cols):
                 if i + j < len(skills):
-                    row.append(Paragraph(f"• {skills[i + j]}", self.styles['SkillItem']))
+                    row.append(Paragraph(f"- {skills[i + j]}", self.styles['SkillItem']))
                 else:
                     row.append(Paragraph("", self.styles['SkillItem']))
             skill_rows.append(row)
