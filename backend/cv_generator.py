@@ -335,9 +335,11 @@ class CVGenerator:
 
     def _build_skills(self):
         """Build skills section in a grid layout"""
-        elements = []
+        all_elements = []
+        section_content = []
 
-        elements.extend(self._create_section_header("Compétences"))
+        # Add section header
+        section_content.extend(self._create_section_header("Compétences"))
 
         skills = self.data.get('skills', [])
 
@@ -365,36 +367,48 @@ class CVGenerator:
                 ('TOPPADDING', (0, 0), (-1, -1), 1),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
             ]))
-            elements.append(skill_table)
+            section_content.append(skill_table)
 
-        elements.append(Spacer(1, 2*mm))
-        return elements
+        section_content.append(Spacer(1, 2*mm))
+
+        # Keep entire skills section together
+        if section_content:
+            all_elements.append(KeepTogether(section_content))
+
+        return all_elements
 
     def _build_languages(self):
         """Build languages section"""
-        elements = []
+        all_elements = []
+        section_content = []
 
-        elements.extend(self._create_section_header("Langues"))
+        # Add section header
+        section_content.extend(self._create_section_header("Langues"))
 
-        lang_items = []
+        # Build language items
         for lang in self.data.get('languages', []):
             lang_text = f"<b>{lang.get('name', '')}</b>"
             if lang.get('proficiency'):
                 lang_text += f" - {lang['proficiency']}"
-            lang_items.append(Paragraph(lang_text, self.styles['SkillItem']))
+            section_content.append(Paragraph(lang_text, self.styles['SkillItem']))
 
-        if lang_items:
-            elements.append(KeepTogether(lang_items))
+        section_content.append(Spacer(1, 2*mm))
 
-        elements.append(Spacer(1, 2*mm))
-        return elements
+        # Keep entire languages section together
+        if section_content:
+            all_elements.append(KeepTogether(section_content))
+
+        return all_elements
 
     def _build_certifications(self):
         """Build certifications section"""
-        elements = []
+        all_elements = []
+        section_content = []
 
-        elements.extend(self._create_section_header("Certifications"))
+        # Add section header
+        section_content.extend(self._create_section_header("Certifications"))
 
+        # Build all certifications
         for i, cert in enumerate(self.data.get('certifications', [])):
             cert_elements = []
 
@@ -417,7 +431,11 @@ class CVGenerator:
             if i < len(self.data.get('certifications', [])) - 1:
                 cert_elements.append(Spacer(1, 3*mm))
 
-            # Keep each certification together
-            elements.append(KeepTogether(cert_elements))
+            # Add certification elements to section
+            section_content.extend(cert_elements)
 
-        return elements
+        # Keep entire certifications section together
+        if section_content:
+            all_elements.append(KeepTogether(section_content))
+
+        return all_elements
