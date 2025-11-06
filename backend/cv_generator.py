@@ -230,15 +230,15 @@ class CVGenerator:
 
             line1_parts = []
             if profile.get('email'):
-                line1_parts.append(f"✉ {profile['email']}")
+                line1_parts.append(f"Email: {profile['email']}")
             if profile.get('phone'):
-                line1_parts.append(f"☎ {profile['phone']}")
+                line1_parts.append(f"Tel: {profile['phone']}")
 
             if line1_parts:
-                contact_lines.append(' • '.join(line1_parts))
+                contact_lines.append(' | '.join(line1_parts))
 
             if profile.get('address'):
-                contact_lines.append(f"📍 {profile['address']}")
+                contact_lines.append(f"Adresse: {profile['address']}")
 
             for line in contact_lines:
                 info_elements.append(Paragraph(line, self.styles['Contact']))
@@ -280,15 +280,15 @@ class CVGenerator:
 
             line1_parts = []
             if profile.get('email'):
-                line1_parts.append(f"✉ {profile['email']}")
+                line1_parts.append(f"Email: {profile['email']}")
             if profile.get('phone'):
-                line1_parts.append(f"☎ {profile['phone']}")
+                line1_parts.append(f"Tel: {profile['phone']}")
 
             if line1_parts:
-                contact_lines.append(' • '.join(line1_parts))
+                contact_lines.append(' | '.join(line1_parts))
 
             if profile.get('address'):
-                contact_lines.append(f"📍 {profile['address']}")
+                contact_lines.append(f"Adresse: {profile['address']}")
 
             for line in contact_lines:
                 elements.append(Paragraph(line, self.styles['Contact']))
@@ -410,7 +410,7 @@ class CVGenerator:
                 date_location.append(position['location'])
 
             if date_location:
-                position_elements.append(Paragraph(' • '.join(date_location), self.styles['DateLocation']))
+                position_elements.append(Paragraph(' | '.join(date_location), self.styles['DateLocation']))
 
             # Description
             if position.get('description'):
@@ -428,9 +428,11 @@ class CVGenerator:
 
     def _build_education(self):
         """Build education section"""
-        elements = []
+        all_elements = []
+        section_content = []
 
-        elements.extend(self._create_section_header("Formation"))
+        # Add section header
+        section_content.extend(self._create_section_header("Formation"))
 
         for i, edu in enumerate(self.data.get('education', [])):
             edu_elements = []
@@ -463,11 +465,16 @@ class CVGenerator:
             if i < len(self.data.get('education', [])) - 1:
                 edu_elements.append(Spacer(1, 4*mm))
 
-            # Keep each education entry together
-            elements.append(KeepTogether(edu_elements))
+            # Add each education entry to section content
+            section_content.extend(edu_elements)
 
-        elements.append(Spacer(1, 2*mm))
-        return elements
+        section_content.append(Spacer(1, 2*mm))
+
+        # Keep entire education section together
+        if section_content:
+            all_elements.append(KeepTogether(section_content))
+
+        return all_elements
 
     def _build_skills(self):
         """Build skills section in a grid layout"""
@@ -488,7 +495,7 @@ class CVGenerator:
             row = []
             for j in range(num_cols):
                 if i + j < len(skills):
-                    row.append(Paragraph(f"• {skills[i + j]}", self.styles['SkillItem']))
+                    row.append(Paragraph(f"- {skills[i + j]}", self.styles['SkillItem']))
                 else:
                     row.append(Paragraph("", self.styles['SkillItem']))
             skill_rows.append(row)
