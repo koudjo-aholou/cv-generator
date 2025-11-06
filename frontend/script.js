@@ -20,6 +20,10 @@ const TEMPLATE_PRESETS = {
     }
 };
 
+// Stepper State
+let currentStep = 1;
+const totalSteps = 3;
+
 // State
 let selectedFiles = [];
 let parsedData = null;
@@ -115,10 +119,23 @@ function setupEventListeners() {
     });
 
     // Button events
-    generateBtn.addEventListener('click', generateCV);
-    resetBtn.addEventListener('click', resetApp);
-    refreshPreviewBtn.addEventListener('click', refreshPreview);
-    downloadFinalBtn.addEventListener('click', downloadFinalPDF);
+    if (generateBtn) generateBtn.addEventListener('click', generateCV);
+    if (resetBtn) resetBtn.addEventListener('click', resetApp);
+    if (refreshPreviewBtn) refreshPreviewBtn.addEventListener('click', refreshPreview);
+    if (downloadFinalBtn) downloadFinalBtn.addEventListener('click', downloadFinalPDF);
+
+    // Stepper navigation
+    const nextStep1Btn = document.getElementById('nextStep1');
+    const nextStep2Btn = document.getElementById('nextStep2');
+    const prevStep2Btn = document.getElementById('prevStep2');
+    const prevStep3Btn = document.getElementById('prevStep3');
+    const newCvBtn = document.getElementById('newCvBtn');
+
+    if (nextStep1Btn) nextStep1Btn.addEventListener('click', () => goToNextStep(1));
+    if (nextStep2Btn) nextStep2Btn.addEventListener('click', () => goToNextStep(2));
+    if (prevStep2Btn) prevStep2Btn.addEventListener('click', () => goToStep(1));
+    if (prevStep3Btn) prevStep3Btn.addEventListener('click', () => goToStep(2));
+    if (newCvBtn) newCvBtn.addEventListener('click', resetApp);
 
     // Photo upload events
     uploadPhotoBtn.addEventListener('click', () => photoInput.click());
@@ -190,6 +207,120 @@ function handleDrop(e) {
     handleFiles(files);
 }
 
+// Stepper Navigation Functions
+function goToStep(stepNumber) {
+    if (stepNumber < 1 || stepNumber > totalSteps) return;
+
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(step => {
+        step.classList.remove('active');
+    });
+
+    // Show the target step
+    const targetStep = document.getElementById(`step-${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.add('active');
+        currentStep = stepNumber;
+        updateStepperIndicator();
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+function goToNextStep(fromStep) {
+    // Validate current step
+    if (!validateStep(fromStep)) {
+        return;
+    }
+
+    // Special handling for step 2 -> 3: generate preview
+    if (fromStep === 2) {
+        generatePreviewForStep3();
+    }
+
+    goToStep(fromStep + 1);
+}
+
+function validateStep(stepNumber) {
+    if (stepNumber === 1) {
+        // Check if required CSV files are uploaded
+        const requiredFiles = ['Profile.csv', 'Positions.csv', 'Education.csv'];
+        const uploadedFileNames = selectedFiles.map(f => f.name);
+
+        const missingFiles = requiredFiles.filter(req =>
+            !uploadedFileNames.some(uploaded => uploaded === req)
+        );
+
+        if (missingFiles.length > 0) {
+            showError(`Fichiers requis manquants : ${missingFiles.join(', ')}`);
+            return false;
+        }
+
+        // Parse data if not already done
+        if (!parsedData) {
+            parseDataForStep2();
+        }
+
+        return true;
+    }
+
+    if (stepNumber === 2) {
+        // Step 2 validation (optional, always pass for now)
+        return true;
+    }
+
+    return true;
+}
+
+function updateStepperIndicator() {
+    const stepperText = document.getElementById('stepperText');
+    if (stepperText) {
+        stepperText.textContent = `Étape ${currentStep}/${totalSteps}`;
+    }
+}
+
+async function parseDataForStep2() {
+    try {
+        showLoading();
+
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('files', file));
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
+        const response = await fetch(`${API_URL}/api/parse`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors du parsing');
+        }
+
+        parsedData = await response.json();
+        hideLoading();
+        populateConfigurationPanel();
+    } catch (error) {
+        hideLoading();
+        showError('Erreur lors du parsing des données: ' + error.message);
+        throw error;
+    }
+}
+
+async function generatePreviewForStep3() {
+    try {
+        showLoading();
+        await refreshPreview();
+        hideLoading();
+    } catch (error) {
+        hideLoading();
+        showError('Erreur lors de la génération de l\'aperçu: ' + error.message);
+    }
+}
+
 // File Handling
 function handleFiles(files) {
     if (files.length === 0) {
@@ -199,11 +330,7 @@ function handleFiles(files) {
 
     selectedFiles = files;
     displayFileList();
-    photoSection.style.display = 'block';
     hideError();
-
-    // Scroll to photo section
-    photoSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function displayFileList() {
@@ -1642,11 +1769,12 @@ function resetApp() {
     currentPdfBlob = null;
     fileList.innerHTML = '';
     fileInput.value = '';
-    photoSection.style.display = 'none';
-    previewSection.style.display = 'none';
     successSection.style.display = 'none';
     removePhoto();
     hideError();
+
+    // Reset stepper to step 1
+    goToStep(1);
 
     // Reset config
     currentConfig = {
