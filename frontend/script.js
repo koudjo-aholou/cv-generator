@@ -1,6 +1,25 @@
 // API Configuration
 const API_URL = 'http://localhost:5000';
 
+// Template presets
+const TEMPLATE_PRESETS = {
+    modern: {
+        primary: '#3498db',
+        text: '#2c3e50',
+        secondary_text: '#7f8c8d'
+    },
+    classic: {
+        primary: '#2c3e50',
+        text: '#1a1a1a',
+        secondary_text: '#666666'
+    },
+    creative: {
+        primary: '#e74c3c',
+        text: '#2c3e50',
+        secondary_text: '#95a5a6'
+    }
+};
+
 // State
 let selectedFiles = [];
 let parsedData = null;
@@ -16,7 +35,13 @@ let currentConfig = {
     },
     section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
     experience_visible: null, // null means all visible
-    education_visible: null    // null means all visible
+    education_visible: null,   // null means all visible
+    template: 'modern',
+    colors: {
+        primary: '#3498db',
+        text: '#2c3e50',
+        secondary_text: '#7f8c8d'
+    }
 };
 let currentPdfBlob = null;
 
@@ -51,6 +76,14 @@ const educationItemsList = document.getElementById('education-items');
 const contactEmailInput = document.getElementById('contact-email');
 const contactPhoneInput = document.getElementById('contact-phone');
 const contactAddressInput = document.getElementById('contact-address');
+
+// Color and Template Elements
+const colorPrimaryInput = document.getElementById('color-primary');
+const colorPrimaryHex = document.getElementById('color-primary-hex');
+const colorTextInput = document.getElementById('color-text');
+const colorTextHex = document.getElementById('color-text-hex');
+const colorSecondaryTextInput = document.getElementById('color-secondary-text');
+const colorSecondaryTextHex = document.getElementById('color-secondary-text-hex');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -100,6 +133,38 @@ function setupEventListeners() {
             });
         }
     });
+
+    // Template selection
+    document.querySelectorAll('input[name="template"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                currentConfig.template = e.target.value;
+                applyTemplateColors(e.target.value);
+            }
+        });
+    });
+
+    // Color pickers
+    if (colorPrimaryInput) {
+        colorPrimaryInput.addEventListener('input', (e) => {
+            currentConfig.colors.primary = e.target.value;
+            colorPrimaryHex.value = e.target.value;
+        });
+    }
+
+    if (colorTextInput) {
+        colorTextInput.addEventListener('input', (e) => {
+            currentConfig.colors.text = e.target.value;
+            colorTextHex.value = e.target.value;
+        });
+    }
+
+    if (colorSecondaryTextInput) {
+        colorSecondaryTextInput.addEventListener('input', (e) => {
+            currentConfig.colors.secondary_text = e.target.value;
+            colorSecondaryTextHex.value = e.target.value;
+        });
+    }
 }
 
 // Drag and Drop Handlers
@@ -199,6 +264,29 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Apply template colors
+function applyTemplateColors(template) {
+    const colors = TEMPLATE_PRESETS[template];
+    if (!colors) return;
+
+    // Update config
+    currentConfig.colors = { ...colors };
+
+    // Update UI
+    if (colorPrimaryInput) {
+        colorPrimaryInput.value = colors.primary;
+        colorPrimaryHex.value = colors.primary;
+    }
+    if (colorTextInput) {
+        colorTextInput.value = colors.text;
+        colorTextHex.value = colors.text;
+    }
+    if (colorSecondaryTextInput) {
+        colorSecondaryTextInput.value = colors.secondary_text;
+        colorSecondaryTextHex.value = colors.secondary_text;
+    }
 }
 
 // Generate CV - Now shows preview instead of downloading
@@ -683,8 +771,18 @@ function resetApp() {
         },
         section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
         experience_visible: null,
-        education_visible: null
+        education_visible: null,
+        template: 'modern',
+        colors: {
+            primary: '#3498db',
+            text: '#2c3e50',
+            secondary_text: '#7f8c8d'
+        }
     };
+
+    // Reset template and colors UI
+    document.querySelector('input[name="template"][value="modern"]').checked = true;
+    applyTemplateColors('modern');
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
