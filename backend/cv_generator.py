@@ -10,6 +10,7 @@ import os
 import tempfile
 import base64
 from io import BytesIO
+from PIL import Image as PILImage
 
 class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
@@ -292,7 +293,7 @@ class CVGenerator:
         return elements
 
     def _create_photo_image(self):
-        """Create photo image from base64 data"""
+        """Create photo image from base64 data with fixed square dimensions"""
         try:
             photo_data = self.data.get('photo', '')
 
@@ -303,8 +304,51 @@ class CVGenerator:
             # Decode base64
             image_data = base64.b64decode(photo_data)
 
-            # Create image from bytes
-            img = Image(BytesIO(image_data), width=35*mm, height=35*mm)
+            # Open image with PIL
+            pil_image = PILImage.open(BytesIO(image_data))
+
+            # Convert to RGB if necessary (handles PNG with transparency)
+            if pil_image.mode in ('RGBA', 'LA', 'P'):
+                # Create white background
+                background = PILImage.new('RGB', pil_image.size, (255, 255, 255))
+                if pil_image.mode == 'P':
+                    pil_image = pil_image.convert('RGBA')
+                background.paste(pil_image, mask=pil_image.split()[-1] if pil_image.mode == 'RGBA' else None)
+                pil_image = background
+            elif pil_image.mode != 'RGB':
+                pil_image = pil_image.convert('RGB')
+
+            # Get dimensions
+            width, height = pil_image.size
+
+            # Calculate crop box to make it square (center crop)
+            if width > height:
+                # Landscape - crop sides
+                left = (width - height) // 2
+                top = 0
+                right = left + height
+                bottom = height
+            else:
+                # Portrait or square - crop top/bottom
+                left = 0
+                top = (height - width) // 2
+                right = width
+                bottom = top + width
+
+            # Crop to square
+            pil_image = pil_image.crop((left, top, right, bottom))
+
+            # Resize to exact dimensions (35mm = ~138 pixels at 100 DPI)
+            target_size = 138
+            pil_image = pil_image.resize((target_size, target_size), PILImage.Resampling.LANCZOS)
+
+            # Save to BytesIO
+            img_buffer = BytesIO()
+            pil_image.save(img_buffer, format='JPEG', quality=85)
+            img_buffer.seek(0)
+
+            # Create ReportLab Image with exact dimensions
+            img = Image(img_buffer, width=35*mm, height=35*mm)
 
             return img
 
