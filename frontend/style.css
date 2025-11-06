@@ -282,21 +282,6 @@ ol li ul li {
 }
 
 /* Photo Upload Section */
-.photo-upload-section {
-    margin-top: 2rem;
-    padding: 1.5rem;
-    border-top: 2px solid var(--border-color);
-    background: linear-gradient(to right, #f8f9ff, #fff5f8);
-    border-radius: 8px;
-}
-
-.photo-upload-section h3 {
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
 .photo-upload-container {
     display: flex;
     gap: 2rem;
@@ -304,7 +289,6 @@ ol li ul li {
     background: var(--secondary-color);
     padding: 1.5rem;
     border-radius: 8px;
-    margin-top: 1rem;
 }
 
 .photo-preview {
