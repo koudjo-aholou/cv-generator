@@ -32,7 +32,15 @@ class CVGenerator:
             if not isinstance(text, str):
                 return text
 
-            # Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
+            # ÉTAPE 1: Normaliser les apostrophes typographiques en apostrophes ASCII
+            # pour préserver les mots comme "d'une", "l'API"
+            # U+2019 (') → U+0027 (')
+            # U+2018 (') → U+0027 (')
+            text = text.replace('\u2019', "'")  # Right single quotation mark
+            text = text.replace('\u2018', "'")  # Left single quotation mark
+            text = text.replace('\u201B', "'")  # Single high-reversed-9 quotation mark
+
+            # ÉTAPE 2: Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
             # Cette approche couvre toutes les plages d'emojis Unicode connues
             emoji_pattern = re.compile(
                 "["
@@ -53,7 +61,7 @@ class CVGenerator:
                 "\U00003000-\U0000303F"  # CJK symbols and punctuation
                 "\U0000FE00-\U0000FE0F"  # variation selectors (modificateurs d'emojis)
                 "\U0000FF00-\U0000FFEF"  # halfwidth and fullwidth forms
-                "\U00002000-\U0000206F"  # general punctuation
+                "\U00002000-\U0000206F"  # general punctuation (apostrophes déjà normalisées)
                 "\U00002190-\U000021FF"  # arrows
                 "\U00002300-\U000023FF"  # miscellaneous technical
                 "\U00002460-\U000024FF"  # enclosed alphanumerics
