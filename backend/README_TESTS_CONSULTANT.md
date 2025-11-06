@@ -18,7 +18,7 @@ cd backend
 python3 test_consultant_missions.py
 ```
 
-## 📋 Couverture des tests (24 tests)
+## 📋 Couverture des tests (30 tests)
 
 ### 1. **TestClientNameExtraction** (8 tests)
 
@@ -49,7 +49,7 @@ Tests pour l'extraction automatique du nom du client depuis le titre du poste.
 
 ---
 
-### 2. **TestDatesOverlap** (6 tests)
+### 2. **TestDatesOverlap** (8 tests)
 
 Tests pour la détection automatique de chevauchement de dates entre positions.
 
@@ -61,15 +61,41 @@ Tests pour la détection automatique de chevauchement de dates entre positions.
 | `test_dates_touch_exactly` | Dates qui se touchent (même mois) | Jan-Dec 2019 ∩ Dec 2019-Dec 2020 | ✅ Chevauche |
 | `test_one_position_still_active` | Position toujours active (pas de fin) | Jan 2020-Present ∩ Jun 2020-Present | ✅ Chevauche |
 | `test_missing_start_date` | Dates manquantes | (vide) ∩ Jan-Dec 2020 | ❌ Ne chevauche pas |
+| `test_linkedin_date_format_overlap` | **Format LinkedIn "Jan 2020"** | Jan-Oct 2020 ∩ Mar-Aug 2020 | ✅ Chevauche |
+| `test_linkedin_date_format_no_overlap` | **Format LinkedIn sans overlap** | Jan-Mar 2020 ∩ Apr-Dec 2020 | ❌ Ne chevauche pas |
 
 **Logique :**
-- Utilise comparaison de chaînes ISO (YYYY-MM-DD)
-- Position active (pas de `finished_on`) = date future (9999-12-31)
+- ✅ Support format LinkedIn : "Jan 2020" → "2020-01"
+- ✅ Support format ISO : "2020-01" (inchangé)
+- Position active (pas de `finished_on`) = date future (9999-12)
 - Dates manquantes = pas de chevauchement
 
 ---
 
-### 3. **TestConsultantPositionsMerging** (6 tests)
+### 3. **TestLinkedInDateConversion** (3 tests)
+
+Tests pour la conversion des formats de dates LinkedIn vers format comparable.
+
+| Test | Description | Input | Output |
+|------|-------------|-------|--------|
+| `test_convert_linkedin_format_to_comparable` | Conversion des 12 mois | "Jan 2020" ... "Dec 2020" | "2020-01" ... "2020-12" |
+| `test_convert_iso_format_unchanged` | Format ISO reste inchangé | "2020-01", "2020-12" | "2020-01", "2020-12" |
+| `test_convert_empty_date` | Dates vides/None | `""`, `None` | `None` |
+
+**Mapping des mois :**
+```python
+Jan → 01, Feb → 02, Mar → 03, Apr → 04, May → 05, Jun → 06
+Jul → 07, Aug → 08, Sep → 09, Oct → 10, Nov → 11, Dec → 12
+```
+
+**Comportement :**
+- LinkedIn "Jan 2020" → Comparable "2020-01" ✅
+- ISO "2020-01" → Inchangé "2020-01" ✅
+- Date vide → `None` ✅
+
+---
+
+### 4. **TestConsultantPositionsMerging** (7 tests)
 
 Tests pour la fusion automatique des positions consultant en structure hiérarchique.
 
@@ -80,6 +106,7 @@ Tests pour la fusion automatique des positions consultant en structure hiérarch
 | `test_no_merge_different_companies` | Pas de fusion si entreprises ≠ | Zenika + Accenture | 2 positions séparées |
 | `test_no_merge_no_overlap` | Pas de fusion si dates disjointes | Zenika 2019 + Zenika 2020 | 2 positions séparées |
 | `test_merge_keeps_longer_description` | Garde la description longue | Courte + Longue | Mission = longue |
+| `test_merge_with_linkedin_date_format` | **Fusion avec format LinkedIn** | "Jan 2020" + "Mar 2020" | ✅ Fusionne correctement |
 | `test_multiple_companies_with_missions` | Plusieurs ESN avec missions | 3 ESN × missions | 3 positions + 4 missions |
 
 **Critères de fusion :**
@@ -98,7 +125,7 @@ Position principale (description courte/vide)
 
 ---
 
-### 4. **TestConsultantMissionsEdgeCases** (4 tests)
+### 5. **TestConsultantMissionsEdgeCases** (4 tests)
 
 Tests pour les cas limites et scénarios edge.
 
@@ -114,10 +141,11 @@ Tests pour les cas limites et scénarios edge.
 ## 📊 Résultats
 
 ```
-============================== 24 passed ==============================
+============================== 30 passed ==============================
 ✅ TestClientNameExtraction: 8/8 tests passés
-✅ TestDatesOverlap: 6/6 tests passés
-✅ TestConsultantPositionsMerging: 6/6 tests passés
+✅ TestDatesOverlap: 8/8 tests passés
+✅ TestLinkedInDateConversion: 3/3 tests passés
+✅ TestConsultantPositionsMerging: 7/7 tests passés
 ✅ TestConsultantMissionsEdgeCases: 4/4 tests passés
 ```
 
@@ -129,22 +157,24 @@ Tests pour les cas limites et scénarios edge.
 
 **Input CSV :**
 ```csv
-Zenika,Consultant Développeur,,2020-01,2020-12
-Zenika,Software Engineer @ Aircall,"Description longue",2020-03,2020-08
+Zenika,Consultant Développeur,,Paris,Jan 2020,Oct 2020
+Zenika,Software Engineer @ Aircall,"Description longue",Remote,Mar 2020,Aug 2020
 ```
+
+**Note:** Le format de dates LinkedIn réel ("Jan 2020", "Mar 2020") est maintenant correctement supporté!
 
 **Output :**
 ```python
 {
   'company': 'Zenika',
   'title': 'Consultant Développeur',
-  'started_on': '2020-01',
-  'finished_on': '2020-12',
+  'started_on': 'Jan 2020',
+  'finished_on': 'Oct 2020',
   'missions': [{
     'client': 'Aircall',
     'title': 'Software Engineer @ Aircall',
-    'started_on': '2020-03',
-    'finished_on': '2020-08',
+    'started_on': 'Mar 2020',
+    'finished_on': 'Aug 2020',
     'description': 'Description longue'
   }]
 }

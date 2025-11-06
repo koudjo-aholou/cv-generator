@@ -160,6 +160,60 @@ class TestDatesOverlap(unittest.TestCase):
         pos2 = {'started_on': '2020-01', 'finished_on': '2020-12'}
         self.assertFalse(self.parser._dates_overlap(pos1, pos2))
 
+    def test_linkedin_date_format_overlap(self):
+        """Dates au format LinkedIn "Jan 2020" doivent être correctement comparées"""
+        # Format réel exporté par LinkedIn
+        pos1 = {'started_on': 'Jan 2020', 'finished_on': 'Oct 2020'}
+        pos2 = {'started_on': 'Mar 2020', 'finished_on': 'Aug 2020'}
+        self.assertTrue(self.parser._dates_overlap(pos1, pos2))
+
+    def test_linkedin_date_format_no_overlap(self):
+        """Dates LinkedIn qui ne se chevauchent pas"""
+        pos1 = {'started_on': 'Jan 2020', 'finished_on': 'Mar 2020'}
+        pos2 = {'started_on': 'Apr 2020', 'finished_on': 'Dec 2020'}
+        self.assertFalse(self.parser._dates_overlap(pos1, pos2))
+
+
+class TestLinkedInDateConversion(unittest.TestCase):
+    """Tests pour la conversion des formats de dates LinkedIn"""
+
+    def setUp(self):
+        self.parser = LinkedInParser([])
+
+    def test_convert_linkedin_format_to_comparable(self):
+        """Convertir format LinkedIn "Jan 2020" vers "2020-01" """
+        test_cases = [
+            ('Jan 2020', '2020-01'),
+            ('Feb 2020', '2020-02'),
+            ('Mar 2020', '2020-03'),
+            ('Apr 2020', '2020-04'),
+            ('May 2020', '2020-05'),
+            ('Jun 2020', '2020-06'),
+            ('Jul 2020', '2020-07'),
+            ('Aug 2020', '2020-08'),
+            ('Sep 2020', '2020-09'),
+            ('Oct 2020', '2020-10'),
+            ('Nov 2020', '2020-11'),
+            ('Dec 2020', '2020-12'),
+        ]
+        for linkedin_date, expected in test_cases:
+            with self.subTest(linkedin_date=linkedin_date):
+                result = self.parser._convert_linkedin_date_to_comparable(linkedin_date)
+                self.assertEqual(result, expected)
+
+    def test_convert_iso_format_unchanged(self):
+        """Format ISO "2020-01" doit rester inchangé"""
+        test_cases = ['2020-01', '2020-12', '2021-06']
+        for iso_date in test_cases:
+            with self.subTest(iso_date=iso_date):
+                result = self.parser._convert_linkedin_date_to_comparable(iso_date)
+                self.assertEqual(result, iso_date)
+
+    def test_convert_empty_date(self):
+        """Date vide doit retourner None"""
+        self.assertIsNone(self.parser._convert_linkedin_date_to_comparable(''))
+        self.assertIsNone(self.parser._convert_linkedin_date_to_comparable(None))
+
 
 class TestConsultantPositionsMerging(unittest.TestCase):
     """Tests pour la fusion automatique des positions consultant"""
@@ -296,6 +350,42 @@ Zenika,Developer @ Aircall,"Very very very very very very long detailed descript
         mission = data['positions'][0]['missions'][0]
         self.assertIn('Very very very', mission['description'])
         self.assertGreater(len(mission['description']), 50)
+
+        # Cleanup
+        import shutil
+        shutil.rmtree(temp_dir)
+
+    def test_merge_with_linkedin_date_format(self):
+        """Test avec le format de dates réel de LinkedIn (Jan 2020)"""
+        temp_dir = tempfile.mkdtemp()
+        # Format exact exporté par LinkedIn
+        positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
+Zenika,Developpeur Js,,Paris,Jan 2020,Oct 2020
+Zenika,Software Engineer @ Aircall,"Mission chez Aircall avec description détaillée",Remote,Mar 2020,Aug 2020
+"""
+        positions_path = os.path.join(temp_dir, 'Positions.csv')
+        with open(positions_path, 'w') as f:
+            f.write(positions_csv)
+
+        parser = LinkedInParser([positions_path])
+        data = parser.parse()
+
+        # Vérifier qu'on a 1 seule position fusionnée
+        self.assertEqual(len(data['positions']), 1)
+
+        # Vérifier que c'est la position principale
+        main_pos = data['positions'][0]
+        self.assertEqual(main_pos['company'], 'Zenika')
+        self.assertEqual(main_pos['title'], 'Developpeur Js')
+
+        # Vérifier qu'on a 1 mission
+        self.assertIn('missions', main_pos)
+        self.assertEqual(len(main_pos['missions']), 1)
+
+        # Vérifier la mission
+        mission = main_pos['missions'][0]
+        self.assertEqual(mission['client'], 'Aircall')
+        self.assertIn('Aircall', mission['title'])
 
         # Cleanup
         import shutil
