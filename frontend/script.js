@@ -20,6 +20,11 @@ const TEMPLATE_PRESETS = {
     }
 };
 
+// Stepper State
+let currentStep = 1;
+const totalSteps = 3;
+let isProcessingStep = false;
+
 // State
 let selectedFiles = [];
 let parsedData = null;
@@ -93,37 +98,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupEventListeners() {
     // Browse button - prevent event propagation to dropZone
-    browseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fileInput.click();
-    });
+    if (browseBtn && fileInput) {
+        browseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    }
 
     // Drop zone events - only trigger if not clicking on button
-    dropZone.addEventListener('click', (e) => {
-        // Don't trigger if clicking on the browse button
-        if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
-            fileInput.click();
-        }
-    });
-    dropZone.addEventListener('dragover', handleDragOver);
-    dropZone.addEventListener('dragleave', handleDragLeave);
-    dropZone.addEventListener('drop', handleDrop);
+    if (dropZone && fileInput && browseBtn) {
+        dropZone.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the browse button
+            if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+    }
 
     // File input change
-    fileInput.addEventListener('change', (e) => {
-        handleFiles(Array.from(e.target.files));
-    });
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+        });
+    }
 
     // Button events
-    generateBtn.addEventListener('click', generateCV);
-    resetBtn.addEventListener('click', resetApp);
-    refreshPreviewBtn.addEventListener('click', refreshPreview);
-    downloadFinalBtn.addEventListener('click', downloadFinalPDF);
+    if (generateBtn) generateBtn.addEventListener('click', generateCV);
+    if (resetBtn) resetBtn.addEventListener('click', resetApp);
+    if (refreshPreviewBtn) refreshPreviewBtn.addEventListener('click', async () => await refreshPreview());
+    if (downloadFinalBtn) downloadFinalBtn.addEventListener('click', downloadFinalPDF);
+
+    // Stepper navigation
+    const nextStep1Btn = document.getElementById('nextStep1');
+    const nextStep2Btn = document.getElementById('nextStep2');
+    const prevStep2Btn = document.getElementById('prevStep2');
+    const prevStep3Btn = document.getElementById('prevStep3');
+    const newCvBtn = document.getElementById('newCvBtn');
+
+    if (nextStep1Btn) nextStep1Btn.addEventListener('click', async () => await goToNextStep(1));
+    if (nextStep2Btn) nextStep2Btn.addEventListener('click', async () => await goToNextStep(2));
+    if (prevStep2Btn) prevStep2Btn.addEventListener('click', () => goToStep(1));
+    if (prevStep3Btn) prevStep3Btn.addEventListener('click', () => goToStep(2));
+    if (newCvBtn) newCvBtn.addEventListener('click', resetApp);
 
     // Photo upload events
-    uploadPhotoBtn.addEventListener('click', () => photoInput.click());
-    photoInput.addEventListener('change', handlePhotoUpload);
-    removePhotoBtn.addEventListener('click', removePhoto);
+    if (uploadPhotoBtn && photoInput) {
+        uploadPhotoBtn.addEventListener('click', () => photoInput.click());
+    }
+    if (photoInput) {
+        photoInput.addEventListener('change', handlePhotoUpload);
+    }
+    if (removePhotoBtn) {
+        removePhotoBtn.addEventListener('click', removePhoto);
+    }
 
     // Section toggles
     ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(section => {
@@ -190,6 +220,144 @@ function handleDrop(e) {
     handleFiles(files);
 }
 
+// Stepper Navigation Functions
+function goToStep(stepNumber) {
+    if (stepNumber < 1 || stepNumber > totalSteps) return;
+
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(step => {
+        step.classList.remove('active');
+    });
+
+    // Show the target step
+    const targetStep = document.getElementById(`step-${stepNumber}`);
+    if (targetStep) {
+        targetStep.classList.add('active');
+        currentStep = stepNumber;
+        updateStepperIndicator();
+
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+async function goToNextStep(fromStep) {
+    // Prevent double-click/concurrent processing
+    if (isProcessingStep) {
+        return;
+    }
+
+    isProcessingStep = true;
+
+    try {
+        // Validate current step
+        const isValid = await validateStep(fromStep);
+        if (!isValid) {
+            return;
+        }
+
+        // Special handling for step 2 -> 3: generate preview
+        if (fromStep === 2) {
+            await generatePreviewForStep3();
+        }
+
+        goToStep(fromStep + 1);
+    } finally {
+        isProcessingStep = false;
+    }
+}
+
+async function validateStep(stepNumber) {
+    if (stepNumber === 1) {
+        // Check if required CSV files are uploaded
+        const requiredFiles = ['Profile.csv', 'Positions.csv', 'Education.csv'];
+        const uploadedFileNames = selectedFiles.map(f => f.name);
+
+        const missingFiles = requiredFiles.filter(req =>
+            !uploadedFileNames.some(uploaded => uploaded === req)
+        );
+
+        if (missingFiles.length > 0) {
+            showError(`Fichiers requis manquants : ${missingFiles.join(', ')}`);
+            return false;
+        }
+
+        // Parse data if not already done
+        if (!parsedData) {
+            try {
+                await parseDataForStep2();
+                return true;
+            } catch (error) {
+                // Error already displayed by parseDataForStep2
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    if (stepNumber === 2) {
+        // Step 2 validation (optional, always pass for now)
+        return true;
+    }
+
+    return true;
+}
+
+function updateStepperIndicator() {
+    const stepperText = document.getElementById('stepperText');
+    if (stepperText) {
+        stepperText.textContent = `Étape ${currentStep}/${totalSteps}`;
+    }
+}
+
+async function parseDataForStep2() {
+    try {
+        showLoading();
+
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('files', file));
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
+        const response = await fetch(`${API_URL}/api/parse-linkedin`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erreur lors du parsing');
+        }
+
+        parsedData = await response.json();
+
+        // Initialize config based on parsed data
+        initializeConfig();
+
+        // Populate configuration UI
+        populateConfigUI();
+
+        hideLoading();
+    } catch (error) {
+        hideLoading();
+        showError('Erreur lors du parsing des données: ' + error.message);
+        throw error;
+    }
+}
+
+async function generatePreviewForStep3() {
+    try {
+        showLoading();
+        await refreshPreview();
+        hideLoading();
+    } catch (error) {
+        hideLoading();
+        showError('Erreur lors de la génération de l\'aperçu: ' + error.message);
+    }
+}
+
 // File Handling
 function handleFiles(files) {
     if (files.length === 0) {
@@ -198,12 +366,10 @@ function handleFiles(files) {
     }
 
     selectedFiles = files;
+    // Reset parsed data when files change
+    parsedData = null;
     displayFileList();
-    photoSection.style.display = 'block';
     hideError();
-
-    // Scroll to photo section
-    photoSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function displayFileList() {
@@ -250,10 +416,11 @@ function displayFileList() {
 
 function removeFile(index) {
     selectedFiles.splice(index, 1);
+    // Reset parsed data when files change
+    parsedData = null;
 
     if (selectedFiles.length === 0) {
         fileList.innerHTML = '';
-        photoSection.style.display = 'none';
     } else {
         displayFileList();
     }
@@ -323,11 +490,6 @@ async function generateCV() {
 
         // Populate configuration UI
         populateConfigUI();
-
-        // Hide photo section and show preview section
-        photoSection.style.display = 'none';
-        previewSection.style.display = 'block';
-        previewSection.scrollIntoView({ behavior: 'smooth' });
 
         // Generate initial preview
         await generatePreview();
@@ -435,6 +597,8 @@ function checkSectionHasData(section) {
 
 // Populate section order with drag and drop
 function populateSectionOrder() {
+    if (!sectionOrderList) return;
+
     sectionOrderList.innerHTML = '';
 
     const sectionNames = {
@@ -553,14 +717,18 @@ function moveSectionDown(index) {
 
 // Populate experience items with checkboxes
 function populateExperienceItems() {
+    if (!experienceItemsList) return;
+
     experienceItemsList.innerHTML = '';
 
     if (!parsedData.positions || parsedData.positions.length === 0) {
-        document.getElementById('experience-items-section').style.display = 'none';
+        const section = document.getElementById('experience-items-section');
+        if (section) section.style.display = 'none';
         return;
     }
 
-    document.getElementById('experience-items-section').style.display = 'block';
+    const section = document.getElementById('experience-items-section');
+    if (section) section.style.display = 'block';
 
     parsedData.positions.forEach((position, index) => {
         const item = document.createElement('label');
@@ -594,14 +762,18 @@ function toggleExperienceItem(index, checked) {
 
 // Populate education items with checkboxes
 function populateEducationItems() {
+    if (!educationItemsList) return;
+
     educationItemsList.innerHTML = '';
 
     if (!parsedData.education || parsedData.education.length === 0) {
-        document.getElementById('education-items-section').style.display = 'none';
+        const section = document.getElementById('education-items-section');
+        if (section) section.style.display = 'none';
         return;
     }
 
-    document.getElementById('education-items-section').style.display = 'block';
+    const section = document.getElementById('education-items-section');
+    if (section) section.style.display = 'block';
 
     parsedData.education.forEach((edu, index) => {
         const item = document.createElement('label');
@@ -639,6 +811,8 @@ function toggleEducationItem(index, checked) {
 function populateProfileSummaryEditor() {
     const section = document.getElementById('profile-summary-section');
     const textarea = document.getElementById('profile-summary');
+
+    if (!section || !textarea) return;
 
     if (!parsedData.profile || !parsedData.profile.summary) {
         section.style.display = 'none';
@@ -707,6 +881,8 @@ function addNewExperience() {
 function populateExperienceEditor() {
     const section = document.getElementById('experience-editor-section');
     const editorContainer = document.getElementById('experience-editor');
+
+    if (!section || !editorContainer) return;
 
     if (!parsedData.positions || parsedData.positions.length === 0) {
         section.style.display = 'none';
@@ -916,6 +1092,8 @@ function populateEducationEditor() {
     const section = document.getElementById('education-editor-section');
     const editorContainer = document.getElementById('education-editor');
 
+    if (!section || !editorContainer) return;
+
     if (!parsedData.education || parsedData.education.length === 0) {
         section.style.display = 'none';
         return;
@@ -1118,6 +1296,8 @@ function populateSkillsSelector() {
     const selectorContainer = document.getElementById('skills-selector');
     const searchInput = document.getElementById('skills-search');
 
+    if (!section || !selectorContainer) return;
+
     if (!parsedData.skills || parsedData.skills.length === 0) {
         section.style.display = 'none';
         return;
@@ -1240,6 +1420,8 @@ function populateLanguagesEditor() {
     const section = document.getElementById('languages-editor-section');
     const editorContainer = document.getElementById('languages-editor');
 
+    if (!section || !editorContainer) return;
+
     if (!parsedData.languages || parsedData.languages.length === 0) {
         section.style.display = 'none';
         return;
@@ -1354,6 +1536,8 @@ function addNewCertification() {
 function populateCertificationsEditor() {
     const section = document.getElementById('certifications-editor-section');
     const editorContainer = document.getElementById('certifications-editor');
+
+    if (!section || !editorContainer) return;
 
     if (!parsedData.certifications || parsedData.certifications.length === 0) {
         section.style.display = 'none';
@@ -1587,8 +1771,7 @@ function downloadFinalPDF() {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 
-    // Show success
-    previewSection.style.display = 'none';
+    // Show success message
     successSection.style.display = 'block';
     successSection.scrollIntoView({ behavior: 'smooth' });
 }
@@ -1642,11 +1825,12 @@ function resetApp() {
     currentPdfBlob = null;
     fileList.innerHTML = '';
     fileInput.value = '';
-    photoSection.style.display = 'none';
-    previewSection.style.display = 'none';
     successSection.style.display = 'none';
     removePhoto();
     hideError();
+
+    // Reset stepper to step 1
+    goToStep(1);
 
     // Reset config
     currentConfig = {

@@ -13,111 +13,122 @@
             <p class="subtitle">Transformez votre profil LinkedIn en CV professionnel</p>
         </header>
 
+        <!-- Stepper Indicator -->
+        <div class="stepper-indicator">
+            <span id="stepperText">Étape 1/3</span>
+        </div>
+
         <main>
-            <!-- Step 1: Instructions -->
-            <section id="instructions" class="card">
-                <h2>📋 Comment ça marche ?</h2>
-                <ol>
-                    <li>
-                        <strong>Exportez vos données LinkedIn :</strong>
-                        <ul>
-                            <li>Allez sur LinkedIn → <em>Paramètres et confidentialité</em></li>
-                            <li>Cliquez sur <em>Confidentialité des données</em></li>
-                            <li>Sélectionnez <em>Obtenir une copie de vos données</em></li>
-                            <li>Choisissez les données à exporter (Profil, Postes, Formation, etc.)</li>
-                            <li>Téléchargez le fichier ZIP et extrayez-le</li>
-                        </ul>
-                    </li>
-                    <li><strong>Téléversez les fichiers CSV</strong> ci-dessous</li>
-                    <li><strong>Ajoutez une photo</strong> (optionnel) pour personnaliser votre CV</li>
-                    <li><strong>Téléchargez votre CV</strong> en PDF</li>
-                </ol>
-                <div class="info-box">
-                    <strong>🔒 Confidentialité :</strong> Toutes les données sont traitées localement.
-                    Aucune information n'est sauvegardée sur un serveur.
-                </div>
-            </section>
-
-            <!-- Step 2: File Upload -->
-            <section id="upload-section" class="card">
-                <h2>📤 Téléverser vos fichiers LinkedIn</h2>
-                <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
-
-                <div class="required-files-info">
-                    <h3>📁 Fichiers CSV nécessaires :</h3>
-                    <div class="files-grid">
-                        <div class="file-badge required">📄 Profile.csv</div>
-                        <div class="file-badge required">📄 Positions.csv</div>
-                        <div class="file-badge required">📄 Education.csv</div>
-                        <div class="file-badge optional">📄 Skills.csv</div>
-                        <div class="file-badge optional">📄 Languages.csv</div>
-                        <div class="file-badge optional">📄 Certifications.csv</div>
-                        <div class="file-badge optional">📄 Email Addresses.csv</div>
-                        <div class="file-badge optional">📄 PhoneNumbers.csv</div>
-                        <div class="file-badge optional">📄 Whatsapp Phone Numbers.csv</div>
+            <!-- ÉTAPE 1: IMPORT -->
+            <div id="step-1" class="step-content active">
+                <!-- Instructions -->
+                <section class="card">
+                    <h2>📋 Comment ça marche ?</h2>
+                    <ol>
+                        <li>
+                            <strong>Exportez vos données LinkedIn :</strong>
+                            <ul>
+                                <li>Allez sur LinkedIn → <em>Paramètres et confidentialité</em></li>
+                                <li>Cliquez sur <em>Confidentialité des données</em></li>
+                                <li>Sélectionnez <em>Obtenir une copie de vos données</em></li>
+                                <li>Choisissez les données à exporter (Profil, Postes, Formation, etc.)</li>
+                                <li>Téléchargez le fichier ZIP et extrayez-le</li>
+                            </ul>
+                        </li>
+                        <li><strong>Téléversez les fichiers CSV</strong> ci-dessous</li>
+                        <li><strong>Ajoutez une photo</strong> (optionnel) pour personnaliser votre CV</li>
+                        <li><strong>Téléchargez votre CV</strong> en PDF</li>
+                    </ol>
+                    <div class="info-box">
+                        <strong>🔒 Confidentialité :</strong> Toutes les données sont traitées localement.
+                        Aucune information n'est sauvegardée sur un serveur.
                     </div>
-                    <p class="files-note">
-                        <span class="required-badge">●</span> <strong>Requis</strong> : Fichiers essentiels pour générer votre CV
-                        <br>
-                        <span class="optional-badge">●</span> <strong>Optionnels</strong> : Fichiers pour enrichir votre CV
-                    </p>
-                </div>
+                </section>
 
-                <div class="drop-zone" id="dropZone">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <p>Glissez-déposez vos fichiers ici</p>
-                    <p class="or-text">ou</p>
-                    <button class="btn-secondary" id="browseBtn">
-                        Parcourir les fichiers
-                    </button>
-                    <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
-                </div>
+                <!-- File Upload -->
+                <section class="card">
+                    <h2>📤 Téléverser vos fichiers LinkedIn</h2>
+                    <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
 
-                <div id="fileList" class="file-list"></div>
-            </section>
+                    <div class="required-files-info">
+                        <h3>📁 Fichiers CSV nécessaires :</h3>
+                        <div class="files-grid">
+                            <div class="file-badge required">📄 Profile.csv</div>
+                            <div class="file-badge required">📄 Positions.csv</div>
+                            <div class="file-badge required">📄 Education.csv</div>
+                            <div class="file-badge optional">📄 Skills.csv</div>
+                            <div class="file-badge optional">📄 Languages.csv</div>
+                            <div class="file-badge optional">📄 Certifications.csv</div>
+                            <div class="file-badge optional">📄 Email Addresses.csv</div>
+                            <div class="file-badge optional">📄 PhoneNumbers.csv</div>
+                            <div class="file-badge optional">📄 Whatsapp Phone Numbers.csv</div>
+                        </div>
+                        <p class="files-note">
+                            <span class="required-badge">●</span> <strong>Requis</strong> : Fichiers essentiels pour générer votre CV
+                            <br>
+                            <span class="optional-badge">●</span> <strong>Optionnels</strong> : Fichiers pour enrichir votre CV
+                        </p>
+                    </div>
 
-            <!-- Step 2.5: Photo Upload (visible après upload CSV) -->
-            <section id="photo-section" class="card" style="display: none;">
-                <h2>📷 Photo de profil (optionnel)</h2>
-                <p class="help-text">Ajoutez une photo pour personnaliser votre CV (vous pouvez aussi passer cette étape)</p>
-
-                <div class="photo-upload-container">
-                    <div class="photo-preview" id="photoPreview">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
+                    <div class="drop-zone" id="dropZone">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        <img id="photoPreviewImg" style="display: none;" alt="Photo de profil">
-                    </div>
-                    <div class="photo-upload-actions">
-                        <input type="file" id="photoInput" accept="image/jpeg,image/jpg,image/png" style="display: none;">
-                        <button id="uploadPhotoBtn" class="btn-secondary">
-                            Choisir une photo
+                        <p>Glissez-déposez vos fichiers ici</p>
+                        <p class="or-text">ou</p>
+                        <button class="btn-secondary" id="browseBtn">
+                            Parcourir les fichiers
                         </button>
-                        <button id="removePhotoBtn" class="btn-secondary" style="display: none;">
-                            Retirer la photo
-                        </button>
-                        <p class="photo-info">JPG ou PNG, max 5MB</p>
+                        <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
                     </div>
+
+                    <div id="fileList" class="file-list"></div>
+                </section>
+
+                <!-- Photo Upload -->
+                <section class="card">
+                    <h2>📷 Photo de profil (optionnel)</h2>
+                    <p class="help-text">Ajoutez une photo pour personnaliser votre CV</p>
+
+                    <div class="photo-upload-container">
+                        <div class="photo-preview" id="photoPreview">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <img id="photoPreviewImg" style="display: none;" alt="Photo de profil">
+                        </div>
+                        <div class="photo-upload-actions">
+                            <input type="file" id="photoInput" accept="image/jpeg,image/jpg,image/png" style="display: none;">
+                            <button id="uploadPhotoBtn" class="btn-secondary">
+                                Choisir une photo
+                            </button>
+                            <button id="removePhotoBtn" class="btn-secondary" style="display: none;">
+                                Retirer la photo
+                            </button>
+                            <p class="photo-info">JPG ou PNG, max 5MB</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Navigation -->
+                <div class="step-navigation">
+                    <button id="nextStep1" class="btn-primary">
+                        Suivant →
+                    </button>
                 </div>
+            </div>
 
-                <button id="generateBtn" class="btn-primary">
-                    📄 Prévisualiser le CV
-                </button>
-            </section>
-
-            <!-- Preview and Configuration Section -->
-            <section id="preview-section" class="card" style="display: none;">
+            <!-- ÉTAPE 2: PERSONNALISATION -->
+            <div id="step-2" class="step-content">
+                <section id="preview-section" class="card">
                 <h2>🎨 Personnalisez votre CV</h2>
-                <p class="help-text">Configurez les sections à inclure et visualisez le résultat en temps réel</p>
+                <p class="help-text">Configurez les sections à inclure dans votre CV</p>
 
-                <div class="preview-container">
-                    <!-- Configuration Panel -->
-                    <div class="config-panel">
+                <!-- Configuration Panel -->
+                <div class="config-panel-fullwidth">
                         <div class="config-section">
                             <h3>📧 Informations de contact</h3>
                             <p class="config-help">Modifiez vos coordonnées si nécessaire</p>
@@ -296,18 +307,28 @@
                             </div>
                         </div>
 
-                        <div class="config-actions">
-                            <button id="refreshPreviewBtn" class="btn-secondary">
-                                🔄 Rafraîchir l'aperçu
-                            </button>
-                            <button id="downloadFinalBtn" class="btn-primary">
-                                📥 Télécharger le CV
-                            </button>
-                        </div>
-                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="step-navigation">
+                    <button id="prevStep2" class="btn-secondary">
+                        ← Précédent
+                    </button>
+                    <button id="nextStep2" class="btn-primary">
+                        Suivant →
+                    </button>
+                </div>
+                </section>
+            </div>
+
+            <!-- ÉTAPE 3: EXPORT -->
+            <div id="step-3" class="step-content">
+                <section class="card">
+                    <h2>📥 Aperçu et téléchargement</h2>
+                    <p class="help-text">Visualisez votre CV et téléchargez-le en PDF</p>
 
                     <!-- PDF Preview -->
-                    <div class="pdf-preview">
+                    <div class="pdf-preview-fullwidth">
                         <div class="preview-header">
                             <h3>Aperçu du CV</h3>
                         </div>
@@ -319,8 +340,28 @@
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
+
+                    <!-- Actions -->
+                    <div class="export-actions">
+                        <button id="refreshPreviewBtn" class="btn-secondary">
+                            🔄 Rafraîchir l'aperçu
+                        </button>
+                        <button id="downloadFinalBtn" class="btn-primary">
+                            📥 Télécharger le CV
+                        </button>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="step-navigation">
+                        <button id="prevStep3" class="btn-secondary">
+                            ← Précédent
+                        </button>
+                        <button id="resetBtn" class="btn-secondary">
+                            Recommencer
+                        </button>
+                    </div>
+                </section>
+            </div>
 
             <!-- Success message -->
             <section id="success-section" class="card" style="display: none;">
@@ -331,7 +372,7 @@
                     </svg>
                     <h2>✅ CV généré avec succès !</h2>
                     <p>Votre CV a été téléchargé. Vérifiez votre dossier de téléchargements.</p>
-                    <button id="resetBtn" class="btn-primary">
+                    <button id="newCvBtn" class="btn-primary">
                         Générer un nouveau CV
                     </button>
                 </div>
