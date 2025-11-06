@@ -38,6 +38,9 @@ class LinkedInParser:
             elif 'phone' in filename:
                 self._parse_phone_numbers(filepath)
 
+        # Clean up duplicate consultant positions after parsing
+        self._merge_consultant_positions()
+
         return self.data
 
     def _parse_profile(self, filepath):
@@ -217,6 +220,163 @@ class LinkedInParser:
 
         except Exception as e:
             print(f"Error parsing phone numbers: {e}")
+
+    def _merge_consultant_positions(self):
+        """
+        Create hierarchical structure for consultant positions (same company, overlapping dates).
+
+        For consultants, LinkedIn often has:
+        - A generic position (e.g., "Zenika, Développeur Js")
+        - Specific missions (e.g., "Zenika, Software Engineer @ Client")
+
+        This function creates a hierarchical structure:
+        - Main position: the generic one (shorter description)
+        - Nested missions: specific client missions (longer description)
+        """
+        if not self.data['positions']:
+            return
+
+        # Group positions by company
+        company_groups = {}
+        for i, position in enumerate(self.data['positions']):
+            company = position.get('company', '').strip()
+            if company:
+                if company not in company_groups:
+                    company_groups[company] = []
+                company_groups[company].append((i, position))
+
+        positions_to_remove = set()
+
+        for company, positions_list in company_groups.items():
+            if len(positions_list) < 2:
+                continue  # No duplicates for this company
+
+            # Check for overlapping dates
+            for i in range(len(positions_list)):
+                for j in range(i + 1, len(positions_list)):
+                    idx1, pos1 = positions_list[i]
+                    idx2, pos2 = positions_list[j]
+
+                    if idx1 in positions_to_remove or idx2 in positions_to_remove:
+                        continue
+
+                    # Check if dates overlap
+                    if self._dates_overlap(pos1, pos2):
+                        # Determine which is the main position (shorter/no description) and which is the mission
+                        desc1_len = len(pos1.get('description', ''))
+                        desc2_len = len(pos2.get('description', ''))
+
+                        # The one with shorter description is the main company position
+                        # The one with longer description is the specific client mission
+                        if desc1_len < desc2_len:
+                            main_pos = pos1
+                            mission_pos = pos2
+                            mission_idx = idx2
+                        else:
+                            main_pos = pos2
+                            mission_pos = pos1
+                            mission_idx = idx1
+
+                        # Extract client name from mission title
+                        client = self._extract_client_name(mission_pos.get('title', ''))
+
+                        # Create mission structure
+                        if 'missions' not in main_pos:
+                            main_pos['missions'] = []
+
+                        mission = {
+                            'client': client or 'Client',
+                            'title': mission_pos.get('title', ''),
+                            'description': mission_pos.get('description', ''),
+                            'location': mission_pos.get('location', ''),
+                            'started_on': mission_pos.get('started_on', ''),
+                            'finished_on': mission_pos.get('finished_on', ''),
+                            'duration': mission_pos.get('duration', '')
+                        }
+
+                        main_pos['missions'].append(mission)
+                        positions_to_remove.add(mission_idx)
+
+        # Remove mission positions that are now nested (in reverse order to preserve indices)
+        for idx in sorted(positions_to_remove, reverse=True):
+            del self.data['positions'][idx]
+
+    def _dates_overlap(self, pos1, pos2):
+        """Check if two positions have overlapping dates"""
+        try:
+            start1 = pos1.get('started_on', '')
+            end1 = pos1.get('finished_on', '') or '9999-12'  # Present = far future
+            start2 = pos2.get('started_on', '')
+            end2 = pos2.get('finished_on', '') or '9999-12'
+
+            if not start1 or not start2:
+                return False
+
+            # Convert LinkedIn date format "Jan 2020" to comparable format "2020-01"
+            start1_comparable = self._convert_linkedin_date_to_comparable(start1)
+            end1_comparable = self._convert_linkedin_date_to_comparable(end1) or '9999-12'
+            start2_comparable = self._convert_linkedin_date_to_comparable(start2)
+            end2_comparable = self._convert_linkedin_date_to_comparable(end2) or '9999-12'
+
+            # Check overlap: positions overlap if NOT (end1 < start2 OR end2 < start1)
+            return not (end1_comparable < start2_comparable or end2_comparable < start1_comparable)
+        except Exception:
+            return False
+
+    def _convert_linkedin_date_to_comparable(self, date_str):
+        """
+        Convert LinkedIn date format to comparable format
+        Input: "Jan 2020" or "2020-01-01"
+        Output: "2020-01"
+        """
+        if not date_str:
+            return None
+
+        # If already in YYYY-MM format or similar, return as is
+        if date_str[0].isdigit():
+            return date_str[:7]  # Keep YYYY-MM
+
+        # Convert month name to number
+        month_map = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+        }
+
+        # Parse "Jan 2020" format
+        parts = date_str.split()
+        if len(parts) == 2:
+            month_name = parts[0]
+            year = parts[1]
+            if month_name in month_map:
+                return f"{year}-{month_map[month_name]}"
+
+        return date_str
+
+    def _extract_client_name(self, title):
+        """
+        Extract client name from title like "Software Engineer @ Aircall"
+        Returns the client name if found, otherwise None
+        """
+        if not title:
+            return None
+
+        # Pattern: "@ ClientName" or "for ClientName" or "chez ClientName"
+        # Support French accents, special characters, numbers, and lowercase names
+        # Note: Lowercase support may create false positives (e.g., "@ home", "@ remote")
+        import re
+        patterns = [
+            r'@\s*([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # @ Aircall, @ airbnb, @ 3M
+            r'for\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)',  # for Aircall, for airbnb
+            r'chez\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s&.\'-]+?)(?:\s*[-•,]|$)'  # chez Aircall, chez airbnb
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, title)
+            if match:
+                return match.group(1).strip()
+
+        return None
 
     def _format_date_range(self, start_date, end_date):
         """Format date range for display (e.g., '2020-01-01 - 2023-12-31' or '2020-01-01 - Présent')"""

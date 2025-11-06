@@ -17,7 +17,8 @@ class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
 
     def __init__(self, data, config=None):
-        self.data = data
+        # Clean emojis from data before storing
+        self.data = self._clean_emoji_from_data(data)
         self.config = config or {}
         self.styles = getSampleStyleSheet()
 
@@ -35,12 +36,23 @@ class CVGenerator:
         self._setup_custom_styles()
 
     def _clean_emoji_from_data(self, data):
-        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font"""
+        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font
+
+        Emojis are treated as bullet point separators - they create new lines that will be formatted as bullet points.
+        """
         def remove_emoji(text):
             if not isinstance(text, str):
                 return text
 
-            # Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
+            # ÉTAPE 1: Normaliser les apostrophes typographiques en apostrophes ASCII
+            # pour préserver les mots comme "d'une", "l'API"
+            # U+2019 (') → U+0027 (')
+            # U+2018 (') → U+0027 (')
+            text = text.replace('\u2019', "'")  # Right single quotation mark
+            text = text.replace('\u2018', "'")  # Left single quotation mark
+            text = text.replace('\u201B', "'")  # Single high-reversed-9 quotation mark
+
+            # ÉTAPE 2: Pattern exhaustif pour capturer TOUS les emojis et symboles Unicode problématiques
             # Cette approche couvre toutes les plages d'emojis Unicode connues
             emoji_pattern = re.compile(
                 "["
@@ -61,7 +73,7 @@ class CVGenerator:
                 "\U00003000-\U0000303F"  # CJK symbols and punctuation
                 "\U0000FE00-\U0000FE0F"  # variation selectors (modificateurs d'emojis)
                 "\U0000FF00-\U0000FFEF"  # halfwidth and fullwidth forms
-                "\U00002000-\U0000206F"  # general punctuation
+                "\U00002000-\U0000206F"  # general punctuation (apostrophes déjà normalisées)
                 "\U00002190-\U000021FF"  # arrows
                 "\U00002300-\U000023FF"  # miscellaneous technical
                 "\U00002460-\U000024FF"  # enclosed alphanumerics
@@ -81,10 +93,18 @@ class CVGenerator:
                 flags=re.UNICODE
             )
 
-            # Nettoyer le texte et gérer les espaces multiples
-            cleaned = emoji_pattern.sub(' ', text)
-            # Réduire les espaces multiples en un seul
-            cleaned = re.sub(r'\s+', ' ', cleaned)
+            # IMPORTANT: Remplacer les emojis par des sauts de ligne au lieu de les supprimer
+            # Cela permet de traiter chaque emoji comme un séparateur de bullet point
+            # Ex: "🎉 Item 1 🤖 Item 2" devient "Item 1\nItem 2"
+            cleaned = emoji_pattern.sub('\n', text)
+
+            # Nettoyer les espaces multiples (mais pas les \n)
+            # Remplacer plusieurs espaces consécutifs par un seul, sauf les sauts de ligne
+            cleaned = re.sub(r'[^\S\n]+', ' ', cleaned)
+
+            # Nettoyer les sauts de ligne multiples
+            cleaned = re.sub(r'\n+', '\n', cleaned)
+
             return cleaned.strip()
 
         def clean_dict(d):
@@ -99,6 +119,97 @@ class CVGenerator:
                 return d
 
         return clean_dict(data)
+
+    def _format_description(self, text):
+        """
+        Format description text by handling line breaks, bullet points, and improving readability.
+
+        This function specifically handles LinkedIn export data where 'n' represents line breaks
+        (not the letter 'n' in words like 'un', 'on', 'modération', etc.)
+
+        Args:
+            text (str): Raw description text
+
+        Returns:
+            str: Formatted text with proper line breaks and structure
+        """
+        if not text or not isinstance(text, str):
+            return text
+
+        # IMPORTANT: Détecter UNIQUEMENT les 'n' qui sont des marqueurs de saut de ligne
+        # et non pas le 'n' qui fait partie de mots français
+
+        # Pattern 1: " nn " (double n entouré d'espaces) = nouveau paragraphe
+        # ATTENTION: Ne pas toucher "nn" dans les mots comme "données", "années"
+        text = re.sub(r'\s+nn\s+', '\n\n', text)
+
+        # Pattern 2: " n " (n entouré d'espaces) = saut de ligne
+        text = text.replace(' n ', '\n')
+
+        # Pattern 3: Début du texte qui commence par "n "
+        if text.startswith('n '):
+            text = text[2:]  # Supprimer le "n " du début
+
+        # Pattern 4: Après un point/virgule/deux-points suivi de " n " = début d'une nouvelle ligne
+        # Ex: "phrase. n Autre phrase" ou "phrase • n Autre"
+        text = re.sub(r'([.,:;•])\s+n\s+', r'\1\n', text)
+
+        # Pattern 5: "n" suivi d'une majuscule et précédé d'un espace = probablement un saut de ligne
+        # Ex: "phrase n Développement" (où 'n' sépare deux items)
+        text = re.sub(r'\s+n\s+([A-ZÀÂÄÇÈÉÊËÎÏÔÖÙÛÜ])', r'\n\1', text)
+
+        # Nettoyer les espaces multiples (mais garder les \n)
+        text = re.sub(r'[^\S\n]+', ' ', text)  # Remplace les espaces multiples sauf \n
+
+        # Diviser en lignes
+        lines = text.split('\n')
+        non_empty_lines = [l.strip() for l in lines if l.strip()]
+
+        # Déterminer si c'est une liste (plusieurs lignes courtes)
+        # Si on a 2+ lignes et que la plupart sont courtes (< 250 chars), c'est probablement une liste
+        is_list = len(non_empty_lines) >= 2 and sum(1 for l in non_empty_lines if len(l) < 250) >= len(non_empty_lines) * 0.7
+
+        formatted_lines = []
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                # Garder les lignes vides pour les paragraphes
+                if formatted_lines and formatted_lines[-1] != '':
+                    formatted_lines.append('')
+                continue
+
+            # Si la ligne contient des bullets "•", on les divise en items séparés
+            if '•' in line:
+                # Diviser la ligne sur les bullets
+                parts = line.split('•')
+                for i, part in enumerate(parts):
+                    part = part.strip()
+                    if part:
+                        # Le premier item (avant le premier •) peut ne pas être un bullet
+                        # Les suivants sont tous des bullets
+                        if i == 0 and not line.startswith('•'):
+                            formatted_lines.append(f'• {part}')
+                        else:
+                            formatted_lines.append(f'• {part}')
+            # Détecter et formater les autres bullet points
+            elif line.startswith('-') or line.startswith('*'):
+                formatted_lines.append(f'• {line[1:].strip()}')
+            # Si c'est une liste détectée (emojis transformés en sauts de ligne), ajouter des bullets
+            elif is_list:
+                formatted_lines.append(f'• {line}')
+            else:
+                # Ligne normale sans bullet (paragraphe simple)
+                formatted_lines.append(line)
+
+        # Joindre avec des balises HTML <br/> pour les sauts de ligne
+        # ReportLab supporte les balises HTML basiques dans les Paragraphs
+        formatted_text = '<br/>'.join(formatted_lines)
+
+        # Les doubles <br/> (paragraphes) deviennent des espacements plus grands
+        formatted_text = formatted_text.replace('<br/><br/>', '<br/><br/>')
+
+        return formatted_text
 
     def _setup_custom_styles(self):
         """Setup custom paragraph styles with template-specific configurations"""
@@ -207,6 +318,44 @@ class CVGenerator:
             fontName='Helvetica',
             leading=14,
             alignment=TA_JUSTIFY
+        ))
+
+        # Mission client name style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionClient',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#e67e22'),  # Orange pour différencier
+            spaceAfter=2,
+            spaceBefore=2,
+            fontName='Helvetica-Bold',
+            leading=13,
+            leftIndent=10  # Indent to show it's nested
+        ))
+
+        # Mission title style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionTitle',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=2,
+            fontName='Helvetica-Oblique',
+            leading=13,
+            leftIndent=10  # Indent to show it's nested
+        ))
+
+        # Mission description style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionDescription',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=13,
+            alignment=TA_JUSTIFY,
+            leftIndent=10  # Indent to show it's nested
         ))
 
         # Summary style
@@ -721,7 +870,8 @@ class CVGenerator:
 
         elements.extend(self._create_section_header("À Propos"))
 
-        summary_para = Paragraph(profile['summary'], self.styles['Summary'])
+        formatted_summary = self._format_description(profile['summary'])
+        summary_para = Paragraph(formatted_summary, self.styles['Summary'])
         elements.append(KeepTogether([summary_para, Spacer(1, 4*mm)]))
 
         return elements
@@ -765,7 +915,38 @@ class CVGenerator:
 
             # Description
             if position.get('description'):
-                position_elements.append(Paragraph(position['description'], self.styles['Description']))
+                formatted_desc = self._format_description(position['description'])
+                position_elements.append(Paragraph(formatted_desc, self.styles['Description']))
+
+            # Missions (for consultants with nested client missions)
+            if position.get('missions'):
+                for mission in position['missions']:
+                    # Add spacing before mission
+                    position_elements.append(Spacer(1, 2*mm))
+
+                    # Mission client name (as a sub-header)
+                    client_name = mission.get('client', 'Client')
+                    mission_header = f"→ Mission chez {client_name}"
+                    position_elements.append(Paragraph(mission_header, self.styles['MissionClient']))
+
+                    # Mission title (if different from main title)
+                    if mission.get('title'):
+                        position_elements.append(Paragraph(mission['title'], self.styles['MissionTitle']))
+
+                    # Mission dates and location
+                    mission_date_loc = []
+                    if mission.get('duration'):
+                        mission_date_loc.append(mission['duration'])
+                    if mission.get('location'):
+                        mission_date_loc.append(mission['location'])
+
+                    if mission_date_loc:
+                        position_elements.append(Paragraph(' | '.join(mission_date_loc), self.styles['DateLocation']))
+
+                    # Mission description
+                    if mission.get('description'):
+                        formatted_mission_desc = self._format_description(mission['description'])
+                        position_elements.append(Paragraph(formatted_mission_desc, self.styles['MissionDescription']))
 
             # Add spacing between positions
             if i < len(positions) - 1:
