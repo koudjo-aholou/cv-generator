@@ -284,14 +284,17 @@ ol li ul li {
 /* Photo Upload Section */
 .photo-upload-section {
     margin-top: 2rem;
-    padding-top: 2rem;
+    padding: 1.5rem;
     border-top: 2px solid var(--border-color);
+    background: linear-gradient(to right, #f8f9ff, #fff5f8);
+    border-radius: 8px;
 }
 
 .photo-upload-section h3 {
     color: var(--primary-color);
     margin-bottom: 0.5rem;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
 .photo-upload-container {
@@ -417,5 +420,25 @@ footer {
 
     .drop-zone {
         padding: 2rem 1rem;
+    }
+
+    .photo-upload-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .photo-preview {
+        width: 120px;
+        height: 120px;
+    }
+
+    .photo-upload-actions {
+        width: 100%;
+        align-items: center;
+    }
+
+    .photo-upload-actions button {
+        width: 100%;
     }
 }
