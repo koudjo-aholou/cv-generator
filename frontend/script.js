@@ -669,6 +669,40 @@ function deleteExperience(index) {
     populateExperienceItems();
 }
 
+// Add Experience
+function addNewExperience() {
+    const newExperience = {
+        title: '',
+        company: '',
+        description: '',
+        started_on: '',
+        finished_on: ''
+    };
+
+    parsedData.positions.push(newExperience);
+
+    // Update config visibility
+    if (currentConfig.experience_visible) {
+        currentConfig.experience_visible.push(parsedData.positions.length - 1);
+    }
+
+    // Re-render
+    populateExperienceEditor();
+    populateExperienceItems();
+
+    // Auto-expand the new item
+    setTimeout(() => {
+        const items = document.querySelectorAll('#experience-editor .editor-item');
+        const lastItem = items[items.length - 1];
+        if (lastItem) {
+            const toggleBtn = lastItem.querySelector('.editor-toggle-btn');
+            if (toggleBtn) {
+                toggleBtn.click();
+            }
+        }
+    }, 100);
+}
+
 // Experience Editor
 function populateExperienceEditor() {
     const section = document.getElementById('experience-editor-section');
@@ -681,6 +715,13 @@ function populateExperienceEditor() {
 
     section.style.display = 'block';
     editorContainer.innerHTML = '';
+
+    // Add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.innerHTML = '➕ Ajouter une expérience';
+    addBtn.onclick = addNewExperience;
+    editorContainer.appendChild(addBtn);
 
     parsedData.positions.forEach((position, index) => {
         const item = document.createElement('div');
@@ -836,6 +877,40 @@ function deleteEducation(index) {
     populateEducationItems();
 }
 
+// Add Education
+function addNewEducation() {
+    const newEducation = {
+        school: '',
+        degree: '',
+        field_of_study: '',
+        start_date: '',
+        end_date: ''
+    };
+
+    parsedData.education.push(newEducation);
+
+    // Update config visibility
+    if (currentConfig.education_visible) {
+        currentConfig.education_visible.push(parsedData.education.length - 1);
+    }
+
+    // Re-render
+    populateEducationEditor();
+    populateEducationItems();
+
+    // Auto-expand the new item
+    setTimeout(() => {
+        const items = document.querySelectorAll('#education-editor .editor-item');
+        const lastItem = items[items.length - 1];
+        if (lastItem) {
+            const toggleBtn = lastItem.querySelector('.editor-toggle-btn');
+            if (toggleBtn) {
+                toggleBtn.click();
+            }
+        }
+    }, 100);
+}
+
 // Education Editor
 function populateEducationEditor() {
     const section = document.getElementById('education-editor-section');
@@ -848,6 +923,13 @@ function populateEducationEditor() {
 
     section.style.display = 'block';
     editorContainer.innerHTML = '';
+
+    // Add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.innerHTML = '➕ Ajouter une formation';
+    addBtn.onclick = addNewEducation;
+    editorContainer.appendChild(addBtn);
 
     parsedData.education.forEach((edu, index) => {
         const item = document.createElement('div');
@@ -1004,6 +1086,32 @@ function deleteSkill(skill) {
     populateSkillsSelector();
 }
 
+// Add Skill
+function addNewSkill() {
+    const skillName = prompt('Entrez le nom de la compétence à ajouter :');
+
+    if (skillName && skillName.trim()) {
+        const trimmedSkill = skillName.trim();
+
+        // Check if skill already exists
+        if (parsedData.skills.includes(trimmedSkill)) {
+            alert('Cette compétence existe déjà !');
+            return;
+        }
+
+        // Add to skills list
+        parsedData.skills.push(trimmedSkill);
+
+        // Add to selected skills
+        if (currentConfig.skills_selected) {
+            currentConfig.skills_selected.push(trimmedSkill);
+        }
+
+        // Re-render
+        populateSkillsSelector();
+    }
+}
+
 // Skills Selector
 function populateSkillsSelector() {
     const section = document.getElementById('skills-selector-section');
@@ -1024,6 +1132,13 @@ function populateSkillsSelector() {
 
     function renderSkills(filter = '') {
         selectorContainer.innerHTML = '';
+
+        // Add button
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-item-btn';
+        addBtn.innerHTML = '➕ Ajouter une compétence';
+        addBtn.onclick = addNewSkill;
+        selectorContainer.appendChild(addBtn);
 
         const filteredSkills = parsedData.skills.filter(skill =>
             skill.toLowerCase().includes(filter.toLowerCase())
@@ -1095,6 +1210,31 @@ function deleteLanguage(index) {
     populateLanguagesEditor();
 }
 
+// Add Language
+function addNewLanguage() {
+    const newLanguage = {
+        name: '',
+        proficiency: ''
+    };
+
+    parsedData.languages.push(newLanguage);
+
+    // Re-render
+    populateLanguagesEditor();
+
+    // Focus on the first input of the new language
+    setTimeout(() => {
+        const items = document.querySelectorAll('#languages-editor .editor-item');
+        const lastItem = items[items.length - 1];
+        if (lastItem) {
+            const firstInput = lastItem.querySelector('input');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }
+    }, 100);
+}
+
 // Languages Editor
 function populateLanguagesEditor() {
     const section = document.getElementById('languages-editor-section');
@@ -1107,6 +1247,13 @@ function populateLanguagesEditor() {
 
     section.style.display = 'block';
     editorContainer.innerHTML = '';
+
+    // Add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.innerHTML = '➕ Ajouter une langue';
+    addBtn.onclick = addNewLanguage;
+    editorContainer.appendChild(addBtn);
 
     parsedData.languages.forEach((lang, index) => {
         const item = document.createElement('div');
@@ -1175,6 +1322,34 @@ function deleteCertification(index) {
     populateCertificationsEditor();
 }
 
+// Add Certification
+function addNewCertification() {
+    const newCertification = {
+        name: '',
+        authority: '',
+        start_date: '',
+        end_date: '',
+        url: ''
+    };
+
+    parsedData.certifications.push(newCertification);
+
+    // Re-render
+    populateCertificationsEditor();
+
+    // Auto-expand the new item
+    setTimeout(() => {
+        const items = document.querySelectorAll('#certifications-editor .editor-item');
+        const lastItem = items[items.length - 1];
+        if (lastItem) {
+            const toggleBtn = lastItem.querySelector('.editor-toggle-btn');
+            if (toggleBtn) {
+                toggleBtn.click();
+            }
+        }
+    }, 100);
+}
+
 // Certifications Editor
 function populateCertificationsEditor() {
     const section = document.getElementById('certifications-editor-section');
@@ -1187,6 +1362,13 @@ function populateCertificationsEditor() {
 
     section.style.display = 'block';
     editorContainer.innerHTML = '';
+
+    // Add button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-item-btn';
+    addBtn.innerHTML = '➕ Ajouter une certification';
+    addBtn.onclick = addNewCertification;
+    editorContainer.appendChild(addBtn);
 
     parsedData.certifications.forEach((cert, index) => {
         const item = document.createElement('div');
