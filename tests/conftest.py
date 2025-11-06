@@ -197,3 +197,29 @@ def mock_large_base64_image():
     """Create a mock large base64-encoded image (6MB)."""
     # Create base64 string representing ~6MB
     return "a" * (8 * 1024 * 1024)  # Base64 is ~33% larger, so 8MB base64 = ~6MB binary
+
+
+@pytest.fixture
+def mock_email_addresses_csv():
+    """Create a mock Email Addresses.csv for testing."""
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='_email_addresses.csv', delete=False, encoding='utf-8', prefix='test_')
+    temp_file.write("Email Address,Confirmed,Primary,Updated On\n")
+    temp_file.write("john.primary@example.com,Yes,Yes,\"4/9/18, 2:05 AM\"\n")
+    temp_file.write("john.secondary@example.com,Yes,No,\"3/1/17, 1:00 PM\"\n")
+    temp_file.close()
+    yield temp_file.name
+    if os.path.exists(temp_file.name):
+        os.remove(temp_file.name)
+
+
+@pytest.fixture
+def mock_phone_numbers_csv():
+    """Create a mock PhoneNumbers.csv for testing."""
+    temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='_phonenumbers.csv', delete=False, encoding='utf-8', prefix='test_')
+    temp_file.write("Extension,Number,Type\n")
+    temp_file.write(", +33 6 12 34 56 78,Mobile\n")
+    temp_file.write(", +33 1 23 45 67 89,Work\n")
+    temp_file.close()
+    yield temp_file.name
+    if os.path.exists(temp_file.name):
+        os.remove(temp_file.name)

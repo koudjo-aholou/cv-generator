@@ -325,6 +325,84 @@ class TestDateFormatting:
         assert '2020-01-01' in formatted
 
 
+class TestEmailAndPhoneParsing:
+    """Test email and phone number parsing from dedicated CSV files."""
+
+    def test_parse_email_from_dedicated_file(self, mock_email_addresses_csv):
+        """Test parsing email from Email Addresses.csv."""
+        parser = LinkedInParser([mock_email_addresses_csv])
+        data = parser.parse()
+
+        assert 'profile' in data
+        profile = data['profile']
+        # Should use primary email
+        assert profile['email'] == 'john.primary@example.com'
+
+    def test_parse_phone_from_dedicated_file(self, mock_phone_numbers_csv):
+        """Test parsing phone from PhoneNumbers.csv."""
+        parser = LinkedInParser([mock_phone_numbers_csv])
+        data = parser.parse()
+
+        assert 'profile' in data
+        profile = data['profile']
+        # Should use mobile phone
+        assert profile['phone'] == '+33 6 12 34 56 78'
+
+    def test_email_file_processed_before_profile(self, mock_email_addresses_csv, mock_profile_csv):
+        """Test that email from Email Addresses.csv is preserved when Profile.csv is processed after."""
+        # Process Email Addresses.csv BEFORE Profile.csv
+        parser = LinkedInParser([mock_email_addresses_csv, mock_profile_csv])
+        data = parser.parse()
+
+        profile = data['profile']
+        # Should keep email from Email Addresses.csv, not override with Profile.csv
+        assert profile['email'] == 'john.primary@example.com'
+        # But should have other profile data
+        assert profile['first_name'] == 'John'
+        assert profile['last_name'] == 'Doe'
+
+    def test_phone_file_processed_before_profile(self, mock_phone_numbers_csv, mock_profile_csv):
+        """Test that phone from PhoneNumbers.csv is preserved when Profile.csv is processed after."""
+        # Process PhoneNumbers.csv BEFORE Profile.csv
+        parser = LinkedInParser([mock_phone_numbers_csv, mock_profile_csv])
+        data = parser.parse()
+
+        profile = data['profile']
+        # Should keep phone from PhoneNumbers.csv, not override with Profile.csv
+        assert profile['phone'] == '+33 6 12 34 56 78'
+        # But should have other profile data
+        assert profile['first_name'] == 'John'
+        assert profile['last_name'] == 'Doe'
+
+    def test_email_and_phone_files_processed_before_profile(self, mock_email_addresses_csv, mock_phone_numbers_csv, mock_profile_csv):
+        """Test that both email and phone are preserved when processed before Profile.csv."""
+        # Process Email and Phone CSVs BEFORE Profile.csv
+        parser = LinkedInParser([mock_email_addresses_csv, mock_phone_numbers_csv, mock_profile_csv])
+        data = parser.parse()
+
+        profile = data['profile']
+        # Should keep email and phone from dedicated files
+        assert profile['email'] == 'john.primary@example.com'
+        assert profile['phone'] == '+33 6 12 34 56 78'
+        # And should have other profile data
+        assert profile['first_name'] == 'John'
+        assert profile['last_name'] == 'Doe'
+
+    def test_profile_processed_before_email_and_phone_files(self, mock_profile_csv, mock_email_addresses_csv, mock_phone_numbers_csv):
+        """Test that email and phone from dedicated files override Profile.csv values."""
+        # Process Profile.csv BEFORE Email and Phone CSVs
+        parser = LinkedInParser([mock_profile_csv, mock_email_addresses_csv, mock_phone_numbers_csv])
+        data = parser.parse()
+
+        profile = data['profile']
+        # Should use email and phone from dedicated files, which override Profile.csv
+        assert profile['email'] == 'john.primary@example.com'
+        assert profile['phone'] == '+33 6 12 34 56 78'
+        # And should have other profile data
+        assert profile['first_name'] == 'John'
+        assert profile['last_name'] == 'Doe'
+
+
 class TestErrorHandling:
     """Test error handling in parser."""
 
