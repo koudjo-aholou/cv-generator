@@ -19,36 +19,25 @@ import { fileService } from './services/file/fileService.js';
 import { validateStep1, validateStep2 } from './business/validation/stepValidator.js';
 import { initializeConfigFromData } from './business/workflow/stepFlow.js';
 
-// UI Components
-import { FileUploader } from './ui/components/fileUploader.js';
-import { PhotoUploader } from './ui/components/photoUploader.js';
-import { StepperNav } from './ui/components/stepperNav.js';
+// Web Components (just import to register them)
+import './ui/components/file-uploader.js';
+import './ui/components/photo-uploader.js';
+import './ui/components/stepper-nav.js';
+import './ui/editors/experience-editor.js';
+import './ui/editors/education-editor.js';
+import './ui/editors/skills-editor.js';
+import './ui/editors/languages-editor.js';
+import './ui/editors/certifications-editor.js';
 
-// UI Editors
-import { ExperienceEditor } from './ui/editors/experienceEditor.js';
-import { EducationEditor } from './ui/editors/educationEditor.js';
-import { SkillsEditor } from './ui/editors/skillsEditor.js';
-import { LanguagesEditor } from './ui/editors/languagesEditor.js';
-import { CertificationsEditor } from './ui/editors/certificationsEditor.js';
-
-// UI Views
+// UI Views (remain as coordinator classes)
 import { ConfigView } from './ui/views/configView.js';
 import { PreviewView } from './ui/views/previewView.js';
 
 class Application {
     constructor() {
-        this.components = {
-            fileUploader: new FileUploader(),
-            photoUploader: new PhotoUploader(),
-            stepperNav: new StepperNav(),
-            experienceEditor: new ExperienceEditor(),
-            educationEditor: new EducationEditor(),
-            skillsEditor: new SkillsEditor(),
-            languagesEditor: new LanguagesEditor(),
-            certificationsEditor: new CertificationsEditor(),
-            configView: new ConfigView(),
-            previewView: new PreviewView()
-        };
+        // Only instantiate coordinator views, not Web Components
+        this.configView = new ConfigView();
+        this.previewView = new PreviewView();
     }
 
     async init() {
@@ -56,12 +45,9 @@ class Application {
         loading.init();
         notifications.init();
 
-        // Initialize all components
-        Object.values(this.components).forEach(component => {
-            if (component.init) {
-                component.init();
-            }
-        });
+        // Initialize coordinator views
+        this.configView.init();
+        this.previewView.init();
 
         // Setup stepper navigation buttons
         this.setupStepperButtons();
@@ -137,7 +123,7 @@ class Application {
 
         // If moving from step 2 to 3, generate preview
         if (success && fromStep === 2) {
-            await this.components.previewView.generatePreview();
+            await this.previewView.generatePreview();
         }
     }
 
@@ -155,6 +141,7 @@ class Application {
 
         // Notify components that data is parsed
         eventBus.emit('data:parsed');
+        document.dispatchEvent(new CustomEvent('data-parsed'));
     }
 
     setupEventListeners() {
@@ -185,8 +172,11 @@ class Application {
         const fileInput = $('fileInput');
         if (fileInput) fileInput.value = '';
 
-        // Reset photo uploader
-        this.components.photoUploader.removePhoto();
+        // Reset photo uploader via custom event
+        const photoUploader = document.querySelector('photo-uploader');
+        if (photoUploader && photoUploader.removePhoto) {
+            photoUploader.removePhoto();
+        }
 
         // Hide success section
         const successSection = $('success-section');
@@ -201,9 +191,6 @@ class Application {
 
         // Clear notifications
         notifications.hide();
-
-        // Re-render components
-        this.components.fileUploader.render();
 
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -32,6 +32,11 @@ class CvStateService {
         store.set('selectedFiles', files);
     }
 
+    observeFiles(callback) {
+        store.observe('selectedFiles', callback);
+        return () => store.unobserve('selectedFiles', callback);
+    }
+
     addFile(file) {
         const files = this.getFiles();
         store.set('selectedFiles', [...files, file]);
