@@ -690,9 +690,6 @@ class CVGenerator:
 
     def generate(self):
         """Generate the PDF CV"""
-        # Clean emoji and problematic Unicode characters from data
-        self.data = self._clean_emoji_from_data(self.data)
-
         # Create temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         pdf_path = temp_file.name
