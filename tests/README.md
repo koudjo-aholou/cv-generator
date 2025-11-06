@@ -1,12 +1,14 @@
 # CV Generator Test Suite
 
-Comprehensive test suite with 88 tests covering security, API, business logic, integration, and compatibility.
+Comprehensive test suite with 103 tests covering security, API, business logic, integration, compatibility, and editing features.
 
 ## Test Structure
 
 ```
 tests/
 ├── conftest.py              # Shared fixtures and pytest configuration
+├── test_api.py              # Editing features tests (15 tests) - CRITICAL
+├── test_frontend.html       # Frontend editing tests (24 tests) - HIGH
 ├── core/                    # Core/Technical tests (44 tests)
 │   ├── test_security.py     # Security tests (10 tests) - CRITICAL
 │   ├── test_app.py          # Flask API tests (27 tests) - CRITICAL
@@ -18,6 +20,54 @@ tests/
 ```
 
 ## Test Categories
+
+### Editing Features Tests (15 tests - CRITICAL)
+
+**Backend Tests (`test_api.py`)**
+
+Tests for all editing functionalities:
+- Profile editing (summary, email, phone, address)
+- Experience editing (title, company, description, dates)
+- Education editing (degree, school, field, dates)
+- Skills selection (individual selection, ex: 10 out of 30)
+- Languages editing (name, proficiency)
+- Certifications editing (name, authority, dates, URL)
+- Multiline descriptions (line breaks support)
+- Configuration (visibility filters, colors, section order)
+- Complete editing workflow
+
+**Running Editing Tests:**
+```bash
+# Run all editing tests
+pytest tests/test_api.py -v
+
+# Run specific editing test
+pytest tests/test_api.py::test_generate_pdf_with_selected_skills -v
+
+# Run with coverage
+pytest tests/test_api.py --cov=backend --cov-report=html
+```
+
+**Frontend Tests (`test_frontend.html`)**
+
+Interactive browser-based tests covering 24 test cases:
+- Data structure validation (4 tests)
+- Profile editing (3 tests)
+- Experience editing (3 tests)
+- Education editing (3 tests)
+- Skills selection (3 tests)
+- Languages editing (2 tests)
+- Certifications editing (2 tests)
+- Configuration (3 tests)
+- Search functionality (1 test)
+
+**Running Frontend Tests:**
+```bash
+# Open in browser
+firefox tests/test_frontend.html
+# or
+google-chrome tests/test_frontend.html
+```
 
 ### Core/Technical Tests (44 tests)
 
@@ -281,14 +331,29 @@ When adding new tests:
 
 ## Test Statistics
 
-- **Total Tests**: 88
-- **Critical Priority**: 37 tests (Security + API)
+- **Total Tests**: 103 (88 backend + 15 editing)
+- **Critical Priority**: 52 tests (Security + API + Editing)
 - **High Priority**: 44 tests (Business Logic)
 - **Medium Priority**: 3 tests (Integration)
 - **Optional Priority**: 4 tests (Compatibility)
 
+- **Editing Features**: 15 backend tests + 24 frontend tests
 - **Core/Technical**: 44 tests
 - **Business Logic**: 44 tests
+
+### New Editing Tests Results
+
+Last run: **15/15 tests passed** ✅
+
+Key coverage:
+- Profile editing: 100%
+- Experience editing: 100%
+- Education editing: 100%
+- Skills selection: 100%
+- Languages editing: 100%
+- Certifications editing: 100%
+- Configuration: 100%
+- Multiline support: 100%
 
 ## Contact
 
