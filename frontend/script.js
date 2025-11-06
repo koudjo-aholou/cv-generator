@@ -98,26 +98,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function setupEventListeners() {
     // Browse button - prevent event propagation to dropZone
-    browseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        fileInput.click();
-    });
+    if (browseBtn && fileInput) {
+        browseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+    }
 
     // Drop zone events - only trigger if not clicking on button
-    dropZone.addEventListener('click', (e) => {
-        // Don't trigger if clicking on the browse button
-        if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
-            fileInput.click();
-        }
-    });
-    dropZone.addEventListener('dragover', handleDragOver);
-    dropZone.addEventListener('dragleave', handleDragLeave);
-    dropZone.addEventListener('drop', handleDrop);
+    if (dropZone && fileInput && browseBtn) {
+        dropZone.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the browse button
+            if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+                fileInput.click();
+            }
+        });
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+    }
 
     // File input change
-    fileInput.addEventListener('change', (e) => {
-        handleFiles(Array.from(e.target.files));
-    });
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(Array.from(e.target.files));
+        });
+    }
 
     // Button events
     if (generateBtn) generateBtn.addEventListener('click', generateCV);
@@ -139,9 +145,15 @@ function setupEventListeners() {
     if (newCvBtn) newCvBtn.addEventListener('click', resetApp);
 
     // Photo upload events
-    uploadPhotoBtn.addEventListener('click', () => photoInput.click());
-    photoInput.addEventListener('change', handlePhotoUpload);
-    removePhotoBtn.addEventListener('click', removePhoto);
+    if (uploadPhotoBtn && photoInput) {
+        uploadPhotoBtn.addEventListener('click', () => photoInput.click());
+    }
+    if (photoInput) {
+        photoInput.addEventListener('change', handlePhotoUpload);
+    }
+    if (removePhotoBtn) {
+        removePhotoBtn.addEventListener('click', removePhoto);
+    }
 
     // Section toggles
     ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(section => {
