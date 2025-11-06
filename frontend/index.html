@@ -58,16 +58,12 @@
                 </div>
 
                 <div id="fileList" class="file-list"></div>
-
-                <button id="parseBtn" class="btn-primary" style="display: none;">
-                    Analyser les données
-                </button>
             </section>
 
             <!-- Step 2.5: Photo Upload (visible après upload CSV) -->
             <section id="photo-section" class="card" style="display: none;">
                 <h2>📷 Photo de profil (optionnel)</h2>
-                <p class="help-text">Ajoutez une photo pour personnaliser votre CV</p>
+                <p class="help-text">Ajoutez une photo pour personnaliser votre CV (vous pouvez aussi passer cette étape)</p>
 
                 <div class="photo-upload-container">
                     <div class="photo-preview" id="photoPreview">
@@ -88,19 +84,23 @@
                         <p class="photo-info">JPG ou PNG, max 5MB</p>
                     </div>
                 </div>
+
+                <button id="generateBtn" class="btn-primary">
+                    📄 Générer mon CV en PDF
+                </button>
             </section>
 
-            <!-- Step 3: Preview and Generate -->
-            <section id="preview-section" class="card" style="display: none;">
-                <h2>👤 Aperçu de vos données</h2>
-                <div id="dataPreview"></div>
-
-                <div class="action-buttons">
-                    <button id="generateBtn" class="btn-primary">
-                        Générer le CV en PDF
-                    </button>
-                    <button id="resetBtn" class="btn-secondary">
-                        Recommencer
+            <!-- Success message -->
+            <section id="success-section" class="card" style="display: none;">
+                <div class="success-message-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <h2>✅ CV généré avec succès !</h2>
+                    <p>Votre CV a été téléchargé. Vérifiez votre dossier de téléchargements.</p>
+                    <button id="resetBtn" class="btn-primary">
+                        Générer un nouveau CV
                     </button>
                 </div>
             </section>

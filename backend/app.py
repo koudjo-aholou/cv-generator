@@ -16,12 +16,19 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# CORS Configuration - Restrict to localhost only
+# CORS Configuration - Allow localhost on any port and file:// protocol (origin: null)
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:*", "http://127.0.0.1:*", "file://*"],
+        "origins": [
+            "http://localhost:*",
+            "http://localhost:8080",
+            "http://127.0.0.1:*",
+            "http://127.0.0.1:8080",
+            "null"  # For direct file:// access
+        ],
         "methods": ["GET", "POST"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": False
     }
 })
 

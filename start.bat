@@ -32,19 +32,28 @@ start /B python app.py
 cd ..
 
 REM Wait for backend to start
-echo ⏳ Attente du démarrage du serveur...
+echo ⏳ Attente du démarrage du backend...
 timeout /t 3 /nobreak >nul
 
-REM Open frontend in browser
+REM Start frontend server
+echo 🌐 Démarrage du serveur frontend...
+cd frontend
+start /B python -m http.server 8080
+cd ..
+
+REM Wait for frontend to start
+timeout /t 2 /nobreak >nul
+
+REM Open browser
 echo 🌐 Ouverture du navigateur...
-start "" "frontend\index.html"
+start "" "http://localhost:8080"
 
 echo.
 echo ✅ Application lancée !
-echo 📍 Backend: http://localhost:5000
-echo 📍 Frontend: frontend\index.html
+echo 📍 Backend API: http://localhost:5000
+echo 📍 Frontend: http://localhost:8080
 echo.
-echo Fermez cette fenêtre pour arrêter le serveur
+echo Fermez cette fenêtre pour arrêter les serveurs
 echo.
 
 pause

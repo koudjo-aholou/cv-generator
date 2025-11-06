@@ -6,6 +6,7 @@ Application web simple pour générer un CV professionnel à partir de votre exp
 
 - ✅ Import de fichiers CSV LinkedIn
 - ✅ Parsing automatique des données (profil, expériences, formation, compétences, etc.)
+- ✅ Upload de photo de profil (optionnel)
 - ✅ Génération de CV en PDF professionnel
 - ✅ Interface simple et intuitive
 - ✅ **100% local** - Aucune donnée n'est sauvegardée
@@ -86,7 +87,23 @@ Les fichiers CSV seront dans le dossier extrait.
 
 ## 🎬 Lancement de l'application
 
-### 1. Démarrer le backend
+### Méthode 1 : Script de démarrage (Recommandé)
+
+Le script démarre automatiquement le backend et le frontend :
+
+```bash
+# Sur Linux/Mac
+./start.sh
+
+# Sur Windows
+start.bat
+```
+
+L'application s'ouvrira automatiquement dans votre navigateur sur `http://localhost:8080`.
+
+### Méthode 2 : Démarrage manuel
+
+#### 1. Démarrer le backend
 
 ```bash
 cd backend
@@ -99,29 +116,29 @@ Vous devriez voir :
 * Running on http://127.0.0.1:5000
 ```
 
-### 2. Ouvrir le frontend
+#### 2. Démarrer le serveur frontend
 
-Ouvrez simplement le fichier `frontend/index.html` dans votre navigateur :
+Dans un nouveau terminal :
 
 ```bash
-# Sur Linux/Mac
-open frontend/index.html
-
-# Sur Windows
-start frontend/index.html
-
-# Ou double-cliquez sur le fichier
+cd frontend
+python3 -m http.server 8080
 ```
 
-L'application s'ouvrira dans votre navigateur par défaut.
+#### 3. Ouvrir l'application
+
+Ouvrez votre navigateur et allez à `http://localhost:8080`
+
+> **Note** : Il est important de servir le frontend via un serveur HTTP plutôt que d'ouvrir le fichier HTML directement pour éviter les problèmes CORS.
 
 ## 📖 Utilisation
 
 1. **Téléversez vos fichiers CSV** LinkedIn dans l'interface
-2. Cliquez sur **"Analyser les données"**
-3. Vérifiez l'aperçu de vos données
-4. Cliquez sur **"Générer le CV en PDF"**
-5. Votre CV sera téléchargé automatiquement ! 🎉
+2. **Ajoutez une photo de profil** (optionnel) - JPG ou PNG, max 5MB
+3. Cliquez sur **"Analyser les données"**
+4. Vérifiez l'aperçu de vos données
+5. Cliquez sur **"Générer le CV en PDF"**
+6. Votre CV sera téléchargé automatiquement ! 🎉
 
 ## 📁 Structure du projet
 
