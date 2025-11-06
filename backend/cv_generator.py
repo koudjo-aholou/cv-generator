@@ -24,7 +24,10 @@ class CVGenerator:
         self._setup_custom_styles()
 
     def _clean_emoji_from_data(self, data):
-        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font"""
+        """Remove all emojis and problematic Unicode characters from data to avoid encoding issues with Helvetica font
+
+        Emojis are treated as bullet point separators - they create new lines that will be formatted as bullet points.
+        """
         def remove_emoji(text):
             if not isinstance(text, str):
                 return text
@@ -70,10 +73,18 @@ class CVGenerator:
                 flags=re.UNICODE
             )
 
-            # Nettoyer le texte et gérer les espaces multiples
-            cleaned = emoji_pattern.sub(' ', text)
-            # Réduire les espaces multiples en un seul
-            cleaned = re.sub(r'\s+', ' ', cleaned)
+            # IMPORTANT: Remplacer les emojis par des sauts de ligne au lieu de les supprimer
+            # Cela permet de traiter chaque emoji comme un séparateur de bullet point
+            # Ex: "🎉 Item 1 🤖 Item 2" devient "Item 1\nItem 2"
+            cleaned = emoji_pattern.sub('\n', text)
+
+            # Nettoyer les espaces multiples (mais pas les \n)
+            # Remplacer plusieurs espaces consécutifs par un seul, sauf les sauts de ligne
+            cleaned = re.sub(r'[^\S\n]+', ' ', cleaned)
+
+            # Nettoyer les sauts de ligne multiples
+            cleaned = re.sub(r'\n+', '\n', cleaned)
+
             return cleaned.strip()
 
         def clean_dict(d):
@@ -132,6 +143,12 @@ class CVGenerator:
 
         # Diviser en lignes
         lines = text.split('\n')
+        non_empty_lines = [l.strip() for l in lines if l.strip()]
+
+        # Déterminer si c'est une liste (plusieurs lignes courtes)
+        # Si on a 2+ lignes et que la plupart sont courtes (< 250 chars), c'est probablement une liste
+        is_list = len(non_empty_lines) >= 2 and sum(1 for l in non_empty_lines if len(l) < 250) >= len(non_empty_lines) * 0.7
+
         formatted_lines = []
 
         for line in lines:
@@ -158,8 +175,11 @@ class CVGenerator:
             # Détecter et formater les autres bullet points
             elif line.startswith('-') or line.startswith('*'):
                 formatted_lines.append(f'• {line[1:].strip()}')
+            # Si c'est une liste détectée (emojis transformés en sauts de ligne), ajouter des bullets
+            elif is_list:
+                formatted_lines.append(f'• {line}')
             else:
-                # Ligne normale sans bullet
+                # Ligne normale sans bullet (paragraphe simple)
                 formatted_lines.append(line)
 
         # Joindre avec des balises HTML <br/> pour les sauts de ligne
