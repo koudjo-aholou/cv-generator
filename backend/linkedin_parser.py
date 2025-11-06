@@ -72,7 +72,7 @@ class LinkedInParser:
                         'location': row.get('Location', ''),
                         'started_on': row.get('Started On', ''),
                         'finished_on': row.get('Finished On', ''),
-                        'duration': self._calculate_duration(
+                        'duration': self._format_date_range(
                             row.get('Started On', ''),
                             row.get('Finished On', '')
                         )
@@ -142,16 +142,16 @@ class LinkedInParser:
         except Exception as e:
             print(f"Error parsing certifications: {e}")
 
-    def _calculate_duration(self, start_date, end_date):
-        """Calculate duration between two dates"""
+    def _format_date_range(self, start_date, end_date):
+        """Format date range for display (e.g., '2020-01-01 - 2023-12-31' or '2020-01-01 - Présent')"""
         try:
             if not start_date:
                 return ""
 
-            # Parse date format from LinkedIn (e.g., "2020-01-01")
+            # Format date range from LinkedIn date format (e.g., "2020-01-01")
             if end_date and end_date.lower() != 'present':
                 return f"{start_date} - {end_date}"
             else:
                 return f"{start_date} - Présent"
-        except:
+        except Exception:
             return ""

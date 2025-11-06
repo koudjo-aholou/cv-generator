@@ -246,18 +246,23 @@ class CVGenerator:
             # Create photo image
             photo_img = self._create_photo_image()
 
-            # Create table with info on left and photo on right
-            header_table = Table([[info_elements, photo_img]], colWidths=[130*mm, 40*mm])
-            header_table.setStyle(TableStyle([
-                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                ('TOPPADDING', (0, 0), (-1, -1), 0),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-            ]))
+            # Only create table layout if photo loaded successfully
+            if photo_img is not None:
+                # Create table with info on left and photo on right
+                header_table = Table([[info_elements, photo_img]], colWidths=[130*mm, 40*mm])
+                header_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ]))
 
-            elements.append(header_table)
+                elements.append(header_table)
+            else:
+                # Photo failed to load, use regular layout
+                elements.extend(info_elements)
 
         else:
             # Build header without photo (original layout)
@@ -309,11 +314,21 @@ class CVGenerator:
 
             # Convert to RGB if necessary (handles PNG with transparency)
             if pil_image.mode in ('RGBA', 'LA', 'P'):
-                # Create white background
-                background = PILImage.new('RGB', pil_image.size, (255, 255, 255))
+                # Convert all transparent/palette modes to RGBA first
                 if pil_image.mode == 'P':
                     pil_image = pil_image.convert('RGBA')
-                background.paste(pil_image, mask=pil_image.split()[-1] if pil_image.mode == 'RGBA' else None)
+                elif pil_image.mode == 'LA':
+                    pil_image = pil_image.convert('RGBA')
+
+                # Create white background
+                background = PILImage.new('RGB', pil_image.size, (255, 255, 255))
+
+                # Paste with alpha mask
+                if pil_image.mode == 'RGBA':
+                    background.paste(pil_image, mask=pil_image.split()[-1])
+                else:
+                    background.paste(pil_image)
+
                 pil_image = background
             elif pil_image.mode != 'RGB':
                 pil_image = pil_image.convert('RGB')
@@ -353,8 +368,10 @@ class CVGenerator:
             return img
 
         except Exception as e:
-            print(f"Error loading photo: {e}")
-            return Paragraph("", self.styles['Normal'])
+            import logging
+            logging.error(f"Error loading photo: {e}")
+            # Return None instead of empty Paragraph to avoid breaking table layout
+            return None
 
     def _build_summary(self):
         """Build summary/about section"""
