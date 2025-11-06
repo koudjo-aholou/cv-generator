@@ -371,8 +371,8 @@ ol li ul li {
 }
 
 .photo-preview {
-    width: 150px;
-    height: 150px;
+    width: 200px;
+    height: 200px;
     border-radius: 8px;
     border: 2px dashed var(--border-color);
     display: flex;
@@ -395,6 +395,12 @@ ol li ul li {
     position: absolute;
     top: 0;
     left: 0;
+    image-rendering: auto;
+    image-rendering: high-quality;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 
 .photo-upload-actions {
@@ -405,7 +411,8 @@ ol li ul li {
 }
 
 .photo-upload-actions button {
-    width: auto;
+    width: 100%;
+    max-width: 250px;
     margin: 0;
 }
 
@@ -1170,8 +1177,8 @@ footer {
     }
 
     .photo-preview {
-        width: 120px;
-        height: 120px;
+        width: 180px;
+        height: 180px;
     }
 
     .photo-upload-actions {

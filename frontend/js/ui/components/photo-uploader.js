@@ -67,14 +67,20 @@ export class PhotoUploader extends HTMLElement {
         const preview = this.querySelector('#photoPreview');
         const previewImg = this.querySelector('#photoPreviewImg');
         const removeBtn = this.querySelector('#removePhotoBtn');
-        const svg = preview.querySelector('svg');
+        const svg = preview ? preview.querySelector('svg') : null;
 
         const reader = new FileReader();
         reader.onload = (e) => {
-            previewImg.src = e.target.result;
-            previewImg.style.display = 'block';
-            if (svg) svg.style.display = 'none';
-            removeBtn.style.display = 'inline-block';
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+            }
+            if (svg) {
+                svg.style.display = 'none';
+            }
+            if (removeBtn) {
+                removeBtn.style.display = 'block';
+            }
         };
         reader.readAsDataURL(file);
     }
@@ -86,13 +92,21 @@ export class PhotoUploader extends HTMLElement {
         const previewImg = this.querySelector('#photoPreviewImg');
         const removeBtn = this.querySelector('#removePhotoBtn');
         const preview = this.querySelector('#photoPreview');
-        const svg = preview.querySelector('svg');
+        const svg = preview ? preview.querySelector('svg') : null;
 
-        photoInput.value = '';
-        previewImg.style.display = 'none';
-        previewImg.src = '';
-        if (svg) svg.style.display = 'block';
-        removeBtn.style.display = 'none';
+        if (photoInput) {
+            photoInput.value = '';
+        }
+        if (previewImg) {
+            previewImg.style.display = 'none';
+            previewImg.src = '';
+        }
+        if (svg) {
+            svg.style.display = 'block';
+        }
+        if (removeBtn) {
+            removeBtn.style.display = 'none';
+        }
 
         this.dispatchEvent(new CustomEvent('photo-removed', {
             bubbles: true

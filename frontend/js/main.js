@@ -97,15 +97,21 @@ class Application {
             if (step === 1) {
                 const files = fileService.getFiles();
                 if (!validateStep1(files)) {
+                    console.log('Step 1 validation failed');
                     return false;
                 }
 
                 // Parse data if not already done
                 if (!cvStateService.getParsedData()) {
                     try {
+                        loading.show();
                         await this.parseDataForStep2();
+                        loading.hide();
                         return true;
                     } catch (error) {
+                        loading.hide();
+                        console.error('Error parsing data:', error);
+                        notifications.showError('Erreur lors du parsing des données: ' + error.message);
                         return false;
                     }
                 }
@@ -119,11 +125,16 @@ class Application {
             return true;
         };
 
-        const success = await stepperService.goToNextStep(fromStep, validator);
+        try {
+            const success = await stepperService.goToNextStep(fromStep, validator);
 
-        // If moving from step 2 to 3, generate preview
-        if (success && fromStep === 2) {
-            await this.previewView.generatePreview();
+            // If moving from step 2 to 3, generate preview
+            if (success && fromStep === 2) {
+                await this.previewView.generatePreview();
+            }
+        } catch (error) {
+            console.error('Error in goToNextStep:', error);
+            notifications.showError('Une erreur est survenue lors de la navigation: ' + error.message);
         }
     }
 

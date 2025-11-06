@@ -6,6 +6,12 @@ import { REQUIRED_FILES } from '../../config/constants.js';
 import { notifications } from '../../core/ui/notifications.js';
 
 export const validateStep1 = (selectedFiles) => {
+    // Check if at least one file is uploaded
+    if (!selectedFiles || selectedFiles.length === 0) {
+        notifications.showError('Veuillez télécharger au moins les fichiers CSV requis');
+        return false;
+    }
+
     const uploadedFileNames = selectedFiles.map(f => f.name);
 
     const missingFiles = REQUIRED_FILES.filter(req =>
