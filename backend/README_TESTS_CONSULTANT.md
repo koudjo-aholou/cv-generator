@@ -18,7 +18,7 @@ cd backend
 python3 test_consultant_missions.py
 ```
 
-## 📋 Couverture des tests (49 tests)
+## 📋 Couverture des tests (50 tests)
 
 ### 1. **TestClientNameExtraction** (8 tests)
 
@@ -189,7 +189,7 @@ Tests pour plusieurs positions qui se chevauchent.
 
 ---
 
-### 10. **TestClientNameAdvancedPatterns** (6 tests)
+### 10. **TestClientNameAdvancedPatterns** (7 tests)
 
 Tests avancés pour l'extraction de noms de clients.
 
@@ -197,17 +197,18 @@ Tests avancés pour l'extraction de noms de clients.
 |------|-------------|--------------|
 | `test_multiple_patterns_in_title` | Plusieurs keywords | Extrait jusqu'au séparateur |
 | `test_pattern_at_end_of_title` | Pattern en fin de titre | ✅ Supporte |
-| `test_pattern_with_lowercase` | Minuscules (airbnb) | ❌ Exige majuscule |
+| `test_pattern_with_lowercase` | Minuscules (airbnb, stripe) | ✅ Maintenant supporté |
 | `test_client_name_with_numbers` | Noms avec chiffres | ✅ Orange 5G, ✅ 3M France, ✅ 42 |
 | `test_client_name_very_long` | Noms très longs (>30 chars) | ✅ Supporte |
 | `test_special_bullet_separators` | Séparateurs •, -, , | ✅ S'arrête correctement |
+| `test_potential_false_positives` | Faux positifs (home, remote) | ⚠️ Acceptés (rares) |
 
 ---
 
 ## 📊 Résultats
 
 ```
-============================== 49 passed ==============================
+============================== 50 passed ==============================
 ✅ TestClientNameExtraction: 8/8 tests passés
 ✅ TestDatesOverlap: 8/8 tests passés
 ✅ TestLinkedInDateConversion: 3/3 tests passés
@@ -217,8 +218,10 @@ Tests avancés pour l'extraction de noms de clients.
 ✅ TestCompanyNameEdgeCases: 3/3 tests passés
 ✅ TestDescriptionEdgeCases: 3/3 tests passés
 ✅ TestMultipleOverlappingPositions: 2/2 tests passés
-✅ TestClientNameAdvancedPatterns: 6/6 tests passés
+✅ TestClientNameAdvancedPatterns: 7/7 tests passés (1 nouveau)
 ```
+
+**Note importante:** Le support des minuscules peut créer des faux positifs rares comme "@ home" ou "@ remote". Ces cas sont documentés et acceptés car le support des noms en minuscules (airbnb, stripe, etc.) est plus important.
 
 ---
 

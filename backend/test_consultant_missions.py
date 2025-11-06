@@ -759,11 +759,16 @@ class TestClientNameAdvancedPatterns(unittest.TestCase):
         self.assertEqual(client, "Airbnb")
 
     def test_pattern_with_lowercase(self):
-        """Pattern avec minuscules (ne devrait pas extraire)"""
-        title = "developer @ airbnb"
-        client = self.parser._extract_client_name(title)
-        # Pattern exige majuscule initiale
-        self.assertIsNone(client)
+        """Pattern avec minuscules (maintenant supporté)"""
+        test_cases = [
+            ("developer @ airbnb", "airbnb"),
+            ("engineer for stripe", "stripe"),
+            ("consultant chez microsoft", "microsoft"),
+        ]
+        for title, expected in test_cases:
+            with self.subTest(title=title):
+                client = self.parser._extract_client_name(title)
+                self.assertEqual(client, expected)
 
     def test_client_name_with_numbers(self):
         """Nom de client avec numéros (supporte noms commençant par chiffre)"""
@@ -796,6 +801,24 @@ class TestClientNameAdvancedPatterns(unittest.TestCase):
         for title, expected in test_cases:
             with self.subTest(title=title):
                 client = self.parser._extract_client_name(title)
+                self.assertEqual(client, expected)
+
+    def test_potential_false_positives(self):
+        """
+        Test des potentiels faux positifs avec support minuscules
+        Ces cas extraient un "client" mais ce sont des mots génériques
+        """
+        # Note: Ces cas sont acceptés comme des faux positifs connus
+        # car le support des minuscules est plus important que d'éviter ces rares cas
+        test_cases = [
+            ("developer @ home", "home"),  # Faux positif connu
+            ("consultant @ remote", "remote"),  # Faux positif connu
+            ("engineer @ office", "office"),  # Faux positif connu
+        ]
+        for title, expected in test_cases:
+            with self.subTest(title=title):
+                client = self.parser._extract_client_name(title)
+                # On documente le comportement actuel (extrait malgré faux positif)
                 self.assertEqual(client, expected)
 
 
