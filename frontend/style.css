@@ -503,6 +503,9 @@ footer {
 /* Full Width PDF Preview for Step 3 */
 .pdf-preview-fullwidth {
     margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .pdf-preview-fullwidth .preview-header {
@@ -511,21 +514,28 @@ footer {
     border-radius: 8px 8px 0 0;
     border: 1px solid var(--border-color);
     border-bottom: none;
+    width: 100%;
+    max-width: 700px;
 }
 
 .pdf-preview-fullwidth .preview-header h3 {
     margin: 0;
     color: var(--primary-color);
     font-size: 1.1rem;
+    text-align: center;
 }
 
 .pdf-preview-fullwidth .preview-frame-container {
     position: relative;
     width: 100%;
-    height: 800px;
+    max-width: 700px;
+    /* Format A4 ratio: 1:1.414 (210mm x 297mm) */
+    aspect-ratio: 210 / 297;
+    min-height: 990px;
     border: 1px solid var(--border-color);
     border-radius: 0 0 8px 8px;
     overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .pdf-preview-fullwidth iframe {
