@@ -653,6 +653,22 @@ function populateProfileSummaryEditor() {
     });
 }
 
+// Delete Experience
+function deleteExperience(index) {
+    parsedData.positions.splice(index, 1);
+
+    // Update config visibility if needed
+    if (currentConfig.experience_visible) {
+        currentConfig.experience_visible = currentConfig.experience_visible
+            .filter(i => i !== index)
+            .map(i => i > index ? i - 1 : i);
+    }
+
+    // Re-render
+    populateExperienceEditor();
+    populateExperienceItems();
+}
+
 // Experience Editor
 function populateExperienceEditor() {
     const section = document.getElementById('experience-editor-section');
@@ -677,12 +693,28 @@ function populateExperienceEditor() {
         title.className = 'editor-item-title';
         title.textContent = `${position.title || 'Sans titre'} - ${position.company || 'Entreprise'}`;
 
+        const headerActions = document.createElement('div');
+        headerActions.className = 'editor-header-actions';
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'editor-toggle-btn';
         toggleBtn.textContent = 'Modifier';
 
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'editor-delete-btn';
+        deleteBtn.textContent = '🗑️ Supprimer';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Voulez-vous vraiment supprimer cette expérience : "${position.title || 'Sans titre'}" ?`)) {
+                deleteExperience(index);
+            }
+        };
+
+        headerActions.appendChild(toggleBtn);
+        headerActions.appendChild(deleteBtn);
+
         header.appendChild(title);
-        header.appendChild(toggleBtn);
+        header.appendChild(headerActions);
 
         const fields = document.createElement('div');
         fields.className = 'editor-fields';
@@ -788,6 +820,22 @@ function populateExperienceEditor() {
     });
 }
 
+// Delete Education
+function deleteEducation(index) {
+    parsedData.education.splice(index, 1);
+
+    // Update config visibility if needed
+    if (currentConfig.education_visible) {
+        currentConfig.education_visible = currentConfig.education_visible
+            .filter(i => i !== index)
+            .map(i => i > index ? i - 1 : i);
+    }
+
+    // Re-render
+    populateEducationEditor();
+    populateEducationItems();
+}
+
 // Education Editor
 function populateEducationEditor() {
     const section = document.getElementById('education-editor-section');
@@ -812,12 +860,28 @@ function populateEducationEditor() {
         title.className = 'editor-item-title';
         title.textContent = `${edu.degree || 'Diplôme'} - ${edu.school || 'École'}`;
 
+        const headerActions = document.createElement('div');
+        headerActions.className = 'editor-header-actions';
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'editor-toggle-btn';
         toggleBtn.textContent = 'Modifier';
 
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'editor-delete-btn';
+        deleteBtn.textContent = '🗑️ Supprimer';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Voulez-vous vraiment supprimer cette formation : "${edu.degree || 'Diplôme'}" ?`)) {
+                deleteEducation(index);
+            }
+        };
+
+        headerActions.appendChild(toggleBtn);
+        headerActions.appendChild(deleteBtn);
+
         header.appendChild(title);
-        header.appendChild(toggleBtn);
+        header.appendChild(headerActions);
 
         const fields = document.createElement('div');
         fields.className = 'editor-fields';
@@ -923,6 +987,23 @@ function populateEducationEditor() {
     });
 }
 
+// Delete Skill
+function deleteSkill(skill) {
+    // Remove from main skills list
+    const skillIndex = parsedData.skills.indexOf(skill);
+    if (skillIndex > -1) {
+        parsedData.skills.splice(skillIndex, 1);
+    }
+
+    // Remove from selected skills
+    if (currentConfig.skills_selected) {
+        currentConfig.skills_selected = currentConfig.skills_selected.filter(s => s !== skill);
+    }
+
+    // Re-render
+    populateSkillsSelector();
+}
+
 // Skills Selector
 function populateSkillsSelector() {
     const section = document.getElementById('skills-selector-section');
@@ -976,8 +1057,21 @@ function populateSkillsSelector() {
             const text = document.createElement('span');
             text.textContent = skill;
 
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'skill-delete-btn';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.title = 'Supprimer cette compétence';
+            deleteBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (confirm(`Voulez-vous vraiment supprimer la compétence "${skill}" ?`)) {
+                    deleteSkill(skill);
+                }
+            };
+
             item.appendChild(checkbox);
             item.appendChild(text);
+            item.appendChild(deleteBtn);
 
             wrapper.appendChild(dragHandle);
             wrapper.appendChild(item);
@@ -991,6 +1085,14 @@ function populateSkillsSelector() {
     searchInput.addEventListener('input', (e) => {
         renderSkills(e.target.value);
     });
+}
+
+// Delete Language
+function deleteLanguage(index) {
+    parsedData.languages.splice(index, 1);
+
+    // Re-render
+    populateLanguagesEditor();
 }
 
 // Languages Editor
@@ -1009,6 +1111,23 @@ function populateLanguagesEditor() {
     parsedData.languages.forEach((lang, index) => {
         const item = document.createElement('div');
         item.className = 'editor-item';
+
+        const itemHeader = document.createElement('div');
+        itemHeader.className = 'editor-item-header-simple';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'editor-delete-btn-small';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.title = 'Supprimer cette langue';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Voulez-vous vraiment supprimer la langue "${lang.name || 'cette langue'}" ?`)) {
+                deleteLanguage(index);
+            }
+        };
+
+        itemHeader.appendChild(deleteBtn);
+        item.appendChild(itemHeader);
 
         const row = document.createElement('div');
         row.className = 'editor-row';
@@ -1048,6 +1167,14 @@ function populateLanguagesEditor() {
     });
 }
 
+// Delete Certification
+function deleteCertification(index) {
+    parsedData.certifications.splice(index, 1);
+
+    // Re-render
+    populateCertificationsEditor();
+}
+
 // Certifications Editor
 function populateCertificationsEditor() {
     const section = document.getElementById('certifications-editor-section');
@@ -1072,12 +1199,28 @@ function populateCertificationsEditor() {
         title.className = 'editor-item-title';
         title.textContent = cert.name || 'Certification';
 
+        const headerActions = document.createElement('div');
+        headerActions.className = 'editor-header-actions';
+
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'editor-toggle-btn';
         toggleBtn.textContent = 'Modifier';
 
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'editor-delete-btn';
+        deleteBtn.textContent = '🗑️ Supprimer';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (confirm(`Voulez-vous vraiment supprimer la certification "${cert.name || 'cette certification'}" ?`)) {
+                deleteCertification(index);
+            }
+        };
+
+        headerActions.appendChild(toggleBtn);
+        headerActions.appendChild(deleteBtn);
+
         header.appendChild(title);
-        header.appendChild(toggleBtn);
+        header.appendChild(headerActions);
 
         const fields = document.createElement('div');
         fields.className = 'editor-fields';
