@@ -295,6 +295,44 @@ class CVGenerator:
             alignment=TA_JUSTIFY
         ))
 
+        # Mission client name style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionClient',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#e67e22'),  # Orange pour différencier
+            spaceAfter=2,
+            spaceBefore=2,
+            fontName='Helvetica-Bold',
+            leading=13,
+            leftIndent=10  # Indent to show it's nested
+        ))
+
+        # Mission title style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionTitle',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#2c3e50'),
+            spaceAfter=2,
+            fontName='Helvetica-Oblique',
+            leading=13,
+            leftIndent=10  # Indent to show it's nested
+        ))
+
+        # Mission description style (for consultant missions)
+        self.styles.add(ParagraphStyle(
+            name='MissionDescription',
+            parent=self.styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#34495e'),
+            spaceAfter=0,
+            fontName='Helvetica',
+            leading=13,
+            alignment=TA_JUSTIFY,
+            leftIndent=10  # Indent to show it's nested
+        ))
+
         # Summary style
         self.styles.add(ParagraphStyle(
             name='Summary',
@@ -597,13 +635,9 @@ class CVGenerator:
             if position.get('title'):
                 position_elements.append(Paragraph(position['title'], self.styles['JobTitle']))
 
-            # Company (with client if applicable for consultants)
+            # Company
             if position.get('company'):
-                company_text = position['company']
-                # If a client is specified (e.g., consultant mission), show "Company (pour Client)"
-                if position.get('client'):
-                    company_text = f"{company_text} (pour {position['client']})"
-                position_elements.append(Paragraph(company_text, self.styles['Company']))
+                position_elements.append(Paragraph(position['company'], self.styles['Company']))
 
             # Dates and location
             date_location = []
@@ -619,6 +653,36 @@ class CVGenerator:
             if position.get('description'):
                 formatted_desc = self._format_description(position['description'])
                 position_elements.append(Paragraph(formatted_desc, self.styles['Description']))
+
+            # Missions (for consultants with nested client missions)
+            if position.get('missions'):
+                for mission in position['missions']:
+                    # Add spacing before mission
+                    position_elements.append(Spacer(1, 2*mm))
+
+                    # Mission client name (as a sub-header)
+                    client_name = mission.get('client', 'Client')
+                    mission_header = f"→ Mission chez {client_name}"
+                    position_elements.append(Paragraph(mission_header, self.styles['MissionClient']))
+
+                    # Mission title (if different from main title)
+                    if mission.get('title'):
+                        position_elements.append(Paragraph(mission['title'], self.styles['MissionTitle']))
+
+                    # Mission dates and location
+                    mission_date_loc = []
+                    if mission.get('duration'):
+                        mission_date_loc.append(mission['duration'])
+                    if mission.get('location'):
+                        mission_date_loc.append(mission['location'])
+
+                    if mission_date_loc:
+                        position_elements.append(Paragraph(' | '.join(mission_date_loc), self.styles['DateLocation']))
+
+                    # Mission description
+                    if mission.get('description'):
+                        formatted_mission_desc = self._format_description(mission['description'])
+                        position_elements.append(Paragraph(formatted_mission_desc, self.styles['MissionDescription']))
 
             # Add spacing between positions
             if i < len(positions) - 1:

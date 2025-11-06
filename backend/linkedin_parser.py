@@ -223,14 +223,15 @@ class LinkedInParser:
 
     def _merge_consultant_positions(self):
         """
-        Merge duplicate consultant positions (same company, overlapping dates).
+        Create hierarchical structure for consultant positions (same company, overlapping dates).
 
         For consultants, LinkedIn often has:
         - A generic position (e.g., "Zenika, Développeur Js")
         - Specific missions (e.g., "Zenika, Software Engineer @ Client")
 
-        This function keeps the most detailed position (longest description) and
-        extracts the client name from the title if present (e.g., "@ Aircall").
+        This function creates a hierarchical structure:
+        - Main position: the generic one (shorter description)
+        - Nested missions: specific client missions (longer description)
         """
         if not self.data['positions']:
             return
@@ -261,32 +262,42 @@ class LinkedInParser:
 
                     # Check if dates overlap
                     if self._dates_overlap(pos1, pos2):
-                        # Keep the position with the longest description (most detailed)
+                        # Determine which is the main position (shorter/no description) and which is the mission
                         desc1_len = len(pos1.get('description', ''))
                         desc2_len = len(pos2.get('description', ''))
 
-                        if desc1_len > desc2_len:
-                            # Keep pos1, remove pos2
-                            positions_to_remove.add(idx2)
-                            # Try to extract client from the kept position's title
-                            client = self._extract_client_name(pos1.get('title', ''))
-                            if not client:
-                                # If not in pos1, try pos2
-                                client = self._extract_client_name(pos2.get('title', ''))
-                            if client:
-                                pos1['client'] = client
+                        # The one with shorter description is the main company position
+                        # The one with longer description is the specific client mission
+                        if desc1_len < desc2_len:
+                            main_pos = pos1
+                            mission_pos = pos2
+                            mission_idx = idx2
                         else:
-                            # Keep pos2, remove pos1
-                            positions_to_remove.add(idx1)
-                            # Try to extract client from the kept position's title
-                            client = self._extract_client_name(pos2.get('title', ''))
-                            if not client:
-                                # If not in pos2, try pos1
-                                client = self._extract_client_name(pos1.get('title', ''))
-                            if client:
-                                pos2['client'] = client
+                            main_pos = pos2
+                            mission_pos = pos1
+                            mission_idx = idx1
 
-        # Remove duplicate positions (in reverse order to preserve indices)
+                        # Extract client name from mission title
+                        client = self._extract_client_name(mission_pos.get('title', ''))
+
+                        # Create mission structure
+                        if 'missions' not in main_pos:
+                            main_pos['missions'] = []
+
+                        mission = {
+                            'client': client or 'Client',
+                            'title': mission_pos.get('title', ''),
+                            'description': mission_pos.get('description', ''),
+                            'location': mission_pos.get('location', ''),
+                            'started_on': mission_pos.get('started_on', ''),
+                            'finished_on': mission_pos.get('finished_on', ''),
+                            'duration': mission_pos.get('duration', '')
+                        }
+
+                        main_pos['missions'].append(mission)
+                        positions_to_remove.add(mission_idx)
+
+        # Remove mission positions that are now nested (in reverse order to preserve indices)
         for idx in sorted(positions_to_remove, reverse=True):
             del self.data['positions'][idx]
 
