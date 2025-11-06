@@ -305,18 +305,53 @@ class LinkedInParser:
         """Check if two positions have overlapping dates"""
         try:
             start1 = pos1.get('started_on', '')
-            end1 = pos1.get('finished_on', '') or '9999-12-31'  # Present = far future
+            end1 = pos1.get('finished_on', '') or '9999-12'  # Present = far future
             start2 = pos2.get('started_on', '')
-            end2 = pos2.get('finished_on', '') or '9999-12-31'
+            end2 = pos2.get('finished_on', '') or '9999-12'
 
             if not start1 or not start2:
                 return False
 
-            # Convert to comparable format (assume YYYY-MM-DD or similar)
-            # Simple string comparison works for ISO dates
-            return not (end1 < start2 or end2 < start1)
+            # Convert LinkedIn date format "Jan 2020" to comparable format "2020-01"
+            start1_comparable = self._convert_linkedin_date_to_comparable(start1)
+            end1_comparable = self._convert_linkedin_date_to_comparable(end1) or '9999-12'
+            start2_comparable = self._convert_linkedin_date_to_comparable(start2)
+            end2_comparable = self._convert_linkedin_date_to_comparable(end2) or '9999-12'
+
+            # Check overlap: positions overlap if NOT (end1 < start2 OR end2 < start1)
+            return not (end1_comparable < start2_comparable or end2_comparable < start1_comparable)
         except Exception:
             return False
+
+    def _convert_linkedin_date_to_comparable(self, date_str):
+        """
+        Convert LinkedIn date format to comparable format
+        Input: "Jan 2020" or "2020-01-01"
+        Output: "2020-01"
+        """
+        if not date_str:
+            return None
+
+        # If already in YYYY-MM format or similar, return as is
+        if date_str[0].isdigit():
+            return date_str[:7]  # Keep YYYY-MM
+
+        # Convert month name to number
+        month_map = {
+            'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+            'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+            'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+        }
+
+        # Parse "Jan 2020" format
+        parts = date_str.split()
+        if len(parts) == 2:
+            month_name = parts[0]
+            year = parts[1]
+            if month_name in month_map:
+                return f"{year}-{month_map[month_name]}"
+
+        return date_str
 
     def _extract_client_name(self, title):
         """
