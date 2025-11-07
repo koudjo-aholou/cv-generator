@@ -114,40 +114,39 @@ export class PreviewView {
 
     async sendEmail() {
         try {
-            // Validate recipient email
-            const recipient = this.recipientEmailInput?.value.trim();
-            if (!recipient) {
-                notifications.showError('Veuillez saisir une adresse email');
-                return;
-            }
-
-            // Basic email validation
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(recipient)) {
-                notifications.showError('Veuillez saisir une adresse email valide');
+            // Get PDF blob
+            const blob = cvStateService.getPdfBlob();
+            if (!blob) {
+                notifications.showError('Aucun CV disponible. Veuillez générer le CV d\'abord.');
                 return;
             }
 
             // Get optional fields
+            const recipient = this.recipientEmailInput?.value.trim() || '';
             const subject = this.emailSubjectInput?.value.trim() || 'Mon CV';
-            const message = this.emailMessageInput?.value.trim() || 'Veuillez trouver ci-joint mon CV.';
+            const message = this.emailMessageInput?.value.trim() || 'Bonjour,\n\nVeuillez trouver ci-joint mon CV.\n\nCordialement';
 
-            // Get PDF blob
-            const blob = cvStateService.getPdfBlob();
-            if (!blob) {
-                notifications.showError('Aucun CV à envoyer. Veuillez générer le CV d\'abord.');
-                return;
+            // Validate recipient email if provided
+            if (recipient) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(recipient)) {
+                    notifications.showError('Veuillez saisir une adresse email valide');
+                    return;
+                }
             }
 
-            // Send email
-            await emailService.sendCvByEmail(recipient, subject, message, blob);
+            // First, download the CV
+            this.downloadPdf();
 
-            // Clear form after successful send
-            if (this.recipientEmailInput) this.recipientEmailInput.value = '';
-            if (this.emailMessageInput) this.emailMessageInput.value = '';
+            // Wait a bit to ensure download started
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Then open mail client with pre-filled data
+            emailService.openMailClient(recipient, subject, message);
+
         } catch (error) {
             // Error is already shown by emailService
-            console.error('Error sending email:', error);
+            console.error('Error opening mail client:', error);
         }
     }
 

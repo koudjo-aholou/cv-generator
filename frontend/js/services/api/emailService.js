@@ -1,66 +1,43 @@
 /**
- * Email service for sending CV
+ * Email service for opening mail client
  */
 
-import { ApiClient } from '../../core/api/client.js';
-import { ENDPOINTS } from '../../config/endpoints.js';
-import { loading } from '../../core/ui/loading.js';
 import { notifications } from '../../core/ui/notifications.js';
 
 class EmailService {
-    constructor() {
-        this.client = new ApiClient();
-    }
-
-    async sendCvByEmail(recipient, subject, message, pdfBlob) {
-        loading.show();
-
+    /**
+     * Open default mail client with pre-filled data
+     * Note: Due to security restrictions, attachments cannot be added automatically via mailto
+     */
+    openMailClient(recipient, subject, message) {
         try {
-            // Convert blob to base64
-            const base64Pdf = await this.blobToBase64(pdfBlob);
+            // Build mailto URL
+            const params = [];
 
-            const response = await this.client.post(
-                ENDPOINTS.SEND_EMAIL,
-                JSON.stringify({
-                    recipient: recipient,
-                    subject: subject,
-                    message: message,
-                    pdf: base64Pdf
-                }),
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erreur lors de l\'envoi de l\'email');
+            if (recipient) {
+                // Recipient is part of the mailto URL, not a parameter
             }
 
-            const result = await response.json();
-            notifications.showSuccess('Email envoyé avec succès !');
-            return result;
-        } catch (error) {
-            notifications.showError('Erreur lors de l\'envoi de l\'email: ' + error.message);
-            throw error;
-        } finally {
-            loading.hide();
-        }
-    }
+            if (subject) {
+                params.push(`subject=${encodeURIComponent(subject)}`);
+            }
 
-    blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
-                const base64String = reader.result.split(',')[1];
-                resolve(base64String);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
+            if (message) {
+                params.push(`body=${encodeURIComponent(message)}`);
+            }
+
+            // Construct the mailto URL
+            const mailtoUrl = `mailto:${recipient || ''}${params.length > 0 ? '?' + params.join('&') : ''}`;
+
+            // Open mail client
+            window.location.href = mailtoUrl;
+
+            notifications.showSuccess('Client mail ouvert ! N\'oubliez pas d\'attacher le CV téléchargé.');
+            return true;
+        } catch (error) {
+            notifications.showError('Erreur lors de l\'ouverture du client mail: ' + error.message);
+            throw error;
+        }
     }
 }
 
