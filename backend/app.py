@@ -1,10 +1,12 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, redirect, session
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import os
 import uuid
 import logging
+import secrets
 from linkedin_parser import LinkedInParser
+from linkedin_api import LinkedInAPIService
 from cv_generator import CVGenerator
 
 # Configure logging
@@ -15,6 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
 
 # CORS Configuration - Allow localhost on any port and file:// protocol (origin: null)
 CORS(app, resources={
@@ -28,7 +31,7 @@ CORS(app, resources={
         ],
         "methods": ["GET", "POST"],
         "allow_headers": ["Content-Type"],
-        "supports_credentials": False
+        "supports_credentials": True
     }
 })
 
@@ -40,6 +43,9 @@ ALLOWED_EXTENSIONS = {'csv'}
 MAX_IMAGE_SIZE = 5 * 1024 * 1024  # 5MB for images
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize LinkedIn API service
+linkedin_service = LinkedInAPIService()
 
 def allowed_file(filename):
     """Check if file extension is allowed"""
@@ -153,6 +159,105 @@ def parse_linkedin():
                     logger.debug(f"Cleaned up: {filepath}")
             except Exception as e:
                 logger.error(f"Failed to cleanup file {filepath}: {e}")
+
+@app.route('/api/linkedin/auth', methods=['GET'])
+def linkedin_auth():
+    """Initie le flux OAuth LinkedIn"""
+    try:
+        # Générer un token CSRF pour sécuriser la requête
+        state = secrets.token_urlsafe(32)
+        session['oauth_state'] = state
+
+        # Générer l'URL d'autorisation
+        auth_url = linkedin_service.get_authorization_url(state)
+
+        return jsonify({
+            'auth_url': auth_url,
+            'state': state
+        })
+
+    except Exception as e:
+        logger.error(f"Error initiating LinkedIn auth: {e}", exc_info=True)
+        return jsonify({"error": "Failed to initiate LinkedIn authentication"}), 500
+
+
+@app.route('/api/linkedin/callback', methods=['GET'])
+def linkedin_callback():
+    """Callback OAuth LinkedIn"""
+    try:
+        # Vérifier le token CSRF
+        state = request.args.get('state')
+        if not state or state != session.get('oauth_state'):
+            return jsonify({"error": "Invalid state parameter"}), 400
+
+        # Récupérer le code d'autorisation
+        code = request.args.get('code')
+        if not code:
+            error = request.args.get('error')
+            error_description = request.args.get('error_description', 'Unknown error')
+            logger.error(f"LinkedIn auth error: {error} - {error_description}")
+            return jsonify({"error": f"LinkedIn authorization failed: {error_description}"}), 400
+
+        # Échanger le code contre un access token
+        token_data = linkedin_service.exchange_code_for_token(code)
+        access_token = token_data.get('access_token')
+
+        if not access_token:
+            return jsonify({"error": "Failed to obtain access token"}), 500
+
+        # Stocker le token dans la session
+        session['linkedin_access_token'] = access_token
+
+        # Rediriger vers le frontend avec succès
+        # En production, vous devriez rediriger vers votre frontend
+        frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8080')
+        return redirect(f"{frontend_url}?linkedin_auth=success")
+
+    except Exception as e:
+        logger.error(f"Error in LinkedIn callback: {e}", exc_info=True)
+        return jsonify({"error": "Failed to complete LinkedIn authentication"}), 500
+
+
+@app.route('/api/linkedin/profile', methods=['GET'])
+def get_linkedin_profile():
+    """Récupère les données du profil LinkedIn de l'utilisateur connecté"""
+    try:
+        # Récupérer le token depuis la session ou depuis le header
+        access_token = session.get('linkedin_access_token')
+
+        if not access_token:
+            # Essayer de récupérer depuis le header Authorization
+            auth_header = request.headers.get('Authorization')
+            if auth_header and auth_header.startswith('Bearer '):
+                access_token = auth_header.split(' ')[1]
+
+        if not access_token:
+            return jsonify({"error": "Not authenticated. Please login with LinkedIn first"}), 401
+
+        # Récupérer les données du profil
+        profile_data = linkedin_service.get_profile(access_token)
+
+        logger.info("Successfully retrieved LinkedIn profile data")
+
+        return jsonify(profile_data)
+
+    except Exception as e:
+        logger.error(f"Error fetching LinkedIn profile: {e}", exc_info=True)
+        return jsonify({"error": "Failed to fetch LinkedIn profile", "details": str(e)}), 500
+
+
+@app.route('/api/linkedin/logout', methods=['POST'])
+def linkedin_logout():
+    """Déconnecte l'utilisateur LinkedIn"""
+    try:
+        session.pop('linkedin_access_token', None)
+        session.pop('oauth_state', None)
+        return jsonify({"message": "Successfully logged out"})
+
+    except Exception as e:
+        logger.error(f"Error logging out: {e}", exc_info=True)
+        return jsonify({"error": "Failed to logout"}), 500
+
 
 @app.route('/api/generate-pdf', methods=['POST'])
 def generate_pdf():
