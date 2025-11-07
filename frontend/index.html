@@ -267,6 +267,29 @@
                         </button>
                     </div>
 
+                    <!-- Email Share Section -->
+                    <div class="email-share-section">
+                        <h3>📧 Partager par email</h3>
+                        <p class="help-text">Envoyez votre CV directement par email</p>
+                        <div class="email-form">
+                            <div class="form-group">
+                                <label for="recipient-email">Adresse email du destinataire</label>
+                                <input type="email" id="recipient-email" placeholder="destinataire@exemple.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email-subject">Objet de l'email (optionnel)</label>
+                                <input type="text" id="email-subject" placeholder="Mon CV" value="Mon CV">
+                            </div>
+                            <div class="form-group">
+                                <label for="email-message">Message (optionnel)</label>
+                                <textarea id="email-message" rows="3" placeholder="Veuillez trouver ci-joint mon CV..."></textarea>
+                            </div>
+                            <button id="sendEmailBtn" class="btn-primary">
+                                📧 Envoyer par email
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Navigation -->
                     <div class="step-navigation">
                         <button id="prevStep3" class="btn-secondary">

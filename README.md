@@ -8,6 +8,7 @@ Application web simple pour générer un CV professionnel à partir de votre exp
 - ✅ Parsing automatique des données (profil, expériences, formation, compétences, etc.)
 - ✅ Upload de photo de profil (optionnel)
 - ✅ Génération de CV en PDF professionnel
+- ✅ **Partage par email** - Envoyez votre CV directement par email
 - ✅ Interface simple et intuitive
 - ✅ **100% local** - Aucune donnée n'est sauvegardée
 - ✅ **Confidentialité garantie** - Tout est traité en mémoire
@@ -63,6 +64,36 @@ python -m venv venv
 source venv/bin/activate  # Sur Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+### 3. Configuration de l'envoi par email (optionnel)
+
+Pour activer la fonctionnalité d'envoi de CV par email, configurez les variables d'environnement SMTP :
+
+1. Copiez le fichier `.env.example` en `.env` :
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Modifiez le fichier `.env` avec vos informations SMTP :
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   SENDER_EMAIL=your-email@gmail.com
+   ```
+
+**Configuration Gmail :**
+- Activez l'authentification à deux facteurs sur votre compte Google
+- Générez un mot de passe d'application : [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+- Utilisez ce mot de passe dans `SMTP_PASSWORD`
+
+**Autres fournisseurs :**
+- **Outlook/Office365** : `smtp.office365.com` (port 587)
+- **Yahoo** : `smtp.mail.yahoo.com` (port 587)
+- **Custom SMTP** : Contactez votre fournisseur pour les détails
+
+⚠️ **Important** : Ne commitez jamais votre fichier `.env` dans Git. Il est déjà dans `.gitignore`.
 
 ## 📦 Exporter vos données LinkedIn
 
@@ -135,10 +166,10 @@ Ouvrez votre navigateur et allez à `http://localhost:8080`
 
 1. **Téléversez vos fichiers CSV** LinkedIn dans l'interface
 2. **Ajoutez une photo de profil** (optionnel) - JPG ou PNG, max 5MB
-3. Cliquez sur **"Analyser les données"**
-4. Vérifiez l'aperçu de vos données
-5. Cliquez sur **"Générer le CV en PDF"**
-6. Votre CV sera téléchargé automatiquement ! 🎉
+3. **Personnalisez votre CV** - Choisissez les sections à inclure et les couleurs
+4. **Prévisualisez** votre CV en temps réel
+5. **Téléchargez** votre CV en PDF - Votre CV sera téléchargé automatiquement ! 🎉
+6. **Partagez par email** (optionnel) - Envoyez votre CV directement par email en renseignant l'adresse du destinataire
 
 ## 📁 Structure du projet
 

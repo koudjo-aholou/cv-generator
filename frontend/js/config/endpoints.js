@@ -6,5 +6,6 @@ import { API_URL } from './constants.js';
 
 export const ENDPOINTS = {
     PARSE_LINKEDIN: `${API_URL}/api/parse-linkedin`,
-    GENERATE_PDF: `${API_URL}/api/generate-pdf`
+    GENERATE_PDF: `${API_URL}/api/generate-pdf`,
+    SEND_EMAIL: `${API_URL}/api/send-email`
 };

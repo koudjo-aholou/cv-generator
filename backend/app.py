@@ -4,8 +4,17 @@ from werkzeug.utils import secure_filename
 import os
 import uuid
 import logging
+import smtplib
+import base64
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from dotenv import load_dotenv
 from linkedin_parser import LinkedInParser
 from cv_generator import CVGenerator
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -218,6 +227,86 @@ def generate_pdf():
     except Exception as e:
         logger.error(f"Error generating PDF: {e}", exc_info=True)
         return jsonify({"error": "Failed to generate PDF", "details": str(e)}), 500
+
+@app.route('/api/send-email', methods=['POST'])
+def send_email():
+    """Send CV by email with validation"""
+    try:
+        data = request.json
+
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Validate required fields
+        recipient = data.get('recipient')
+        if not recipient:
+            return jsonify({"error": "Recipient email is required"}), 400
+
+        # Validate email format
+        if '@' not in recipient or '.' not in recipient:
+            return jsonify({"error": "Invalid recipient email format"}), 400
+
+        # Get optional fields
+        subject = data.get('subject', 'Mon CV')
+        message = data.get('message', 'Veuillez trouver ci-joint mon CV.')
+        pdf_base64 = data.get('pdf')
+
+        if not pdf_base64:
+            return jsonify({"error": "PDF data is required"}), 400
+
+        # Decode PDF from base64
+        try:
+            pdf_data = base64.b64decode(pdf_base64)
+        except Exception:
+            return jsonify({"error": "Invalid PDF data"}), 400
+
+        # Get SMTP configuration from environment variables
+        smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        smtp_user = os.getenv('SMTP_USER')
+        smtp_password = os.getenv('SMTP_PASSWORD')
+        sender_email = os.getenv('SENDER_EMAIL', smtp_user)
+
+        if not smtp_user or not smtp_password:
+            logger.error("SMTP credentials not configured")
+            return jsonify({
+                "error": "Email service not configured. Please contact the administrator."
+            }), 500
+
+        # Create email message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient
+        msg['Subject'] = subject
+
+        # Add message body
+        msg.attach(MIMEText(message, 'plain', 'utf-8'))
+
+        # Attach PDF
+        pdf_attachment = MIMEApplication(pdf_data, _subtype='pdf')
+        pdf_attachment.add_header('Content-Disposition', 'attachment', filename='cv.pdf')
+        msg.attach(pdf_attachment)
+
+        # Send email
+        try:
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(msg)
+
+            logger.info(f"Email sent successfully to {recipient}")
+            return jsonify({"success": True, "message": "Email sent successfully"})
+
+        except smtplib.SMTPAuthenticationError:
+            logger.error("SMTP authentication failed")
+            return jsonify({"error": "Email authentication failed"}), 500
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error: {e}")
+            return jsonify({"error": f"Failed to send email: {str(e)}"}), 500
+
+    except Exception as e:
+        logger.error(f"Error sending email: {e}", exc_info=True)
+        return jsonify({"error": "Failed to send email", "details": str(e)}), 500
 
 if __name__ == '__main__':
     # Production-safe configuration
