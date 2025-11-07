@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Étape 2</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { background: #f0f0f0; }
+        #log {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 2px solid #0073b1;
+            padding: 15px;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 9999;
+        }
+        #log p { margin: 5px 0; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+
+        /* Force les éditeurs à être visibles pour debug */
+        experience-editor,
+        education-editor {
+            border: 3px dashed orange !important;
+            min-height: 100px !important;
+            margin: 20px 0 !important;
+            padding: 20px !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="log">
+        <h3>📊 Debug Log</h3>
+        <button onclick="testManualEvent()">🧪 Émettre 'data-parsed' manuellement</button>
+        <button onclick="logComponentsState()">📋 État des composants</button>
+        <hr>
+        <div id="log-content"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>🧪 Test Étape 2 - Éditeurs</h1>
+        </header>
+
+        <main style="padding: 2rem;">
+            <div class="card">
+                <h2>Éditeur d'expériences</h2>
+                <experience-editor id="exp-editor"></experience-editor>
+            </div>
+
+            <div class="card">
+                <h2>Éditeur de formations</h2>
+                <education-editor id="edu-editor"></education-editor>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        const logContent = document.getElementById('log-content');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContent.appendChild(p);
+            console.log(message);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        log('🚀 Page chargée', 'info');
+
+        // Import main.js pour initialiser l'app
+        try {
+            await import('./js/main.js');
+            log('✅ main.js importé', 'success');
+        } catch(e) {
+            log(`❌ Erreur import main.js: ${e.message}`, 'error');
+        }
+
+        // Écouter l'événement data-parsed
+        let eventCount = 0;
+        document.addEventListener('data-parsed', (e) => {
+            eventCount++;
+            log(`🎯 Événement 'data-parsed' reçu (${eventCount}x)`, 'success');
+
+            // Vérifier les données
+            const { cvStateService } = await import('./js/services/state/cvStateService.js');
+            const data = cvStateService.getParsedData();
+
+            if (data) {
+                log(`📦 Données disponibles: ${Object.keys(data).join(', ')}`, 'info');
+                log(`   - positions: ${data.positions?.length || 0} items`, 'info');
+                log(`   - education: ${data.education?.length || 0} items`, 'info');
+            } else {
+                log('⚠️ Pas de données après événement', 'error');
+            }
+
+            // Vérifier l'état des éditeurs
+            setTimeout(() => logComponentsState(), 100);
+        });
+
+        // Fonction pour tester l'émission manuelle
+        window.testManualEvent = async function() {
+            log('🔨 Création de données de test...', 'info');
+
+            const { cvStateService } = await import('./js/services/state/cvStateService.js');
+
+            // Créer des données factices
+            cvStateService.setParsedData({
+                positions: [
+                    { company: 'Test Company', title: 'Test Job', start_date: '2020', end_date: '2023' }
+                ],
+                education: [
+                    { school: 'Test School', degree: 'Test Degree', start_date: '2015', end_date: '2019' }
+                ],
+                skills: ['JavaScript', 'React'],
+                languages: [],
+                certifications: [],
+                profile: { name: 'Test User' }
+            });
+
+            log('📤 Émission de l\'événement data-parsed...', 'info');
+            document.dispatchEvent(new CustomEvent('data-parsed'));
+        };
+
+        // Fonction pour logger l'état des composants
+        window.logComponentsState = function() {
+            const expEditor = document.getElementById('exp-editor');
+            const eduEditor = document.getElementById('edu-editor');
+
+            log('--- État des composants ---', 'info');
+
+            if (expEditor) {
+                log(`experience-editor:`, 'info');
+                log(`  - display: ${expEditor.style.display || 'default'}`, 'info');
+                log(`  - innerHTML: ${expEditor.innerHTML.length} chars`, 'info');
+                log(`  - offsetHeight: ${expEditor.offsetHeight}px`, 'info');
+                log(`  - experiences: ${expEditor.experiences?.length || 0}`, 'info');
+            }
+
+            if (eduEditor) {
+                log(`education-editor:`, 'info');
+                log(`  - display: ${eduEditor.style.display || 'default'}`, 'info');
+                log(`  - innerHTML: ${eduEditor.innerHTML.length} chars`, 'info');
+                log(`  - offsetHeight: ${eduEditor.offsetHeight}px`, 'info');
+                log(`  - educations: ${eduEditor.educations?.length || 0}`, 'info');
+            }
+        };
+
+        // État initial après 1 seconde
+        setTimeout(() => {
+            log('🔍 Vérification de l\'état initial...', 'info');
+            logComponentsState();
+        }, 1000);
+    </script>
+</body>
+</html>
