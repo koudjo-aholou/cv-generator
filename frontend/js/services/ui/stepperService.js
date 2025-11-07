@@ -13,6 +13,22 @@ class StepperService {
         cvStateService.setCurrentStep(stepNumber);
         eventBus.emit('stepper:change', stepNumber);
 
+        // Update DOM: hide all steps and show target step
+        document.querySelectorAll('.step-content').forEach(step => {
+            step.classList.remove('active');
+        });
+
+        const targetStep = document.getElementById(`step-${stepNumber}`);
+        if (targetStep) {
+            targetStep.classList.add('active');
+        }
+
+        // Update stepper-nav if it exists
+        const stepperNav = document.querySelector('stepper-nav');
+        if (stepperNav && stepperNav.goToStep) {
+            stepperNav.setAttribute('current', stepNumber);
+        }
+
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
