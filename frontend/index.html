@@ -267,6 +267,32 @@
                         </button>
                     </div>
 
+                    <!-- Email Share Section -->
+                    <div class="email-share-section">
+                        <h3>📧 Partager par email</h3>
+                        <p class="help-text">Téléchargez votre CV et ouvrez votre client mail pour l'envoyer</p>
+                        <div class="email-form">
+                            <div class="form-group">
+                                <label for="recipient-email">Adresse email du destinataire (optionnel)</label>
+                                <input type="email" id="recipient-email" placeholder="destinataire@exemple.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="email-subject">Objet de l'email (optionnel)</label>
+                                <input type="text" id="email-subject" placeholder="Mon CV" value="Mon CV">
+                            </div>
+                            <div class="form-group">
+                                <label for="email-message">Message (optionnel)</label>
+                                <textarea id="email-message" rows="3" placeholder="Veuillez trouver ci-joint mon CV...">Bonjour,&#10;&#10;Veuillez trouver ci-joint mon CV.&#10;&#10;Cordialement</textarea>
+                            </div>
+                            <button id="sendEmailBtn" class="btn-primary">
+                                📧 Ouvrir le client mail
+                            </button>
+                            <p class="help-text" style="margin-top: 1rem; font-size: 0.85rem; color: #666;">
+                                💡 Le CV sera téléchargé automatiquement. Vous devrez l'attacher manuellement dans votre client mail.
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Navigation -->
                     <div class="step-navigation">
                         <button id="prevStep3" class="btn-secondary">
