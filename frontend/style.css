@@ -1199,3 +1199,32 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* Web Components Styles */
+file-uploader,
+photo-uploader,
+stepper-nav,
+experience-editor,
+education-editor,
+skills-editor,
+languages-editor,
+certifications-editor {
+    display: block;
+    width: 100%;
+}
+
+file-uploader {
+    margin-bottom: 1rem;
+}
+
+photo-uploader {
+    margin-bottom: 1rem;
+}
+
+experience-editor,
+education-editor,
+skills-editor,
+languages-editor,
+certifications-editor {
+    margin: 2rem 0;
+}
