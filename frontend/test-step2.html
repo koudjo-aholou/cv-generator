@@ -86,7 +86,7 @@
 
         // Écouter l'événement data-parsed
         let eventCount = 0;
-        document.addEventListener('data-parsed', (e) => {
+        document.addEventListener('data-parsed', async (e) => {
             eventCount++;
             log(`🎯 Événement 'data-parsed' reçu (${eventCount}x)`, 'success');
 
@@ -103,7 +103,7 @@
             }
 
             // Vérifier l'état des éditeurs
-            setTimeout(() => logComponentsState(), 100);
+            setTimeout(() => window.logComponentsState(), 100);
         });
 
         // Fonction pour tester l'émission manuelle
