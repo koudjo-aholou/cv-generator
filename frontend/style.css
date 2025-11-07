@@ -348,6 +348,24 @@ ol li ul li {
     color: white;
 }
 
+.btn-danger {
+    background: var(--error-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background: #a02020;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(201, 42, 42, 0.3);
+}
+
 .action-buttons {
     display: flex;
     gap: 1rem;
@@ -1198,4 +1216,33 @@ footer {
     .contact-fields {
         grid-template-columns: 1fr;
     }
+}
+
+/* Web Components Styles */
+file-uploader,
+photo-uploader,
+stepper-nav,
+experience-editor,
+education-editor,
+skills-editor,
+languages-editor,
+certifications-editor {
+    display: block;
+    width: 100%;
+}
+
+file-uploader {
+    margin-bottom: 1rem;
+}
+
+photo-uploader {
+    margin-bottom: 1rem;
+}
+
+experience-editor,
+education-editor,
+skills-editor,
+languages-editor,
+certifications-editor {
+    margin: 2rem 0;
 }

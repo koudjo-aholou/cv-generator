@@ -45,7 +45,7 @@
                     </div>
                 </section>
 
-                <!-- File Upload -->
+                <!-- File Upload Web Component -->
                 <section class="card">
                     <h2>📤 Téléverser vos fichiers LinkedIn</h2>
                     <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
@@ -70,47 +70,12 @@
                         </p>
                     </div>
 
-                    <div class="drop-zone" id="dropZone">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <p>Glissez-déposez vos fichiers ici</p>
-                        <p class="or-text">ou</p>
-                        <button class="btn-secondary" id="browseBtn">
-                            Parcourir les fichiers
-                        </button>
-                        <input type="file" id="fileInput" multiple accept=".csv" style="display: none;">
-                    </div>
-
-                    <div id="fileList" class="file-list"></div>
+                    <file-uploader></file-uploader>
                 </section>
 
-                <!-- Photo Upload -->
+                <!-- Photo Upload Web Component -->
                 <section class="card">
-                    <h2>📷 Photo de profil (optionnel)</h2>
-                    <p class="help-text">Ajoutez une photo pour personnaliser votre CV</p>
-
-                    <div class="photo-upload-container">
-                        <div class="photo-preview" id="photoPreview">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <img id="photoPreviewImg" style="display: none;" alt="Photo de profil">
-                        </div>
-                        <div class="photo-upload-actions">
-                            <input type="file" id="photoInput" accept="image/jpeg,image/jpg,image/png" style="display: none;">
-                            <button id="uploadPhotoBtn" class="btn-secondary">
-                                Choisir une photo
-                            </button>
-                            <button id="removePhotoBtn" class="btn-secondary" style="display: none;">
-                                Retirer la photo
-                            </button>
-                            <p class="photo-info">JPG ou PNG, max 5MB</p>
-                        </div>
-                    </div>
+                    <photo-uploader></photo-uploader>
                 </section>
 
                 <!-- Navigation -->
@@ -248,64 +213,15 @@
                             </div>
                         </div>
 
-                        <div class="config-section" id="experience-editor-section" style="display: none;">
-                            <h3>💼 Éditer les expériences</h3>
-                            <p class="config-help">Modifiez le contenu de vos expériences professionnelles</p>
-                            <div id="experience-editor">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
+                        <experience-editor></experience-editor>
 
-                        <div class="config-section" id="experience-items-section">
-                            <h3>💼 Expériences à inclure</h3>
-                            <p class="config-help">Sélectionnez les expériences à afficher</p>
-                            <div id="experience-items" class="item-toggles">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
+                        <education-editor></education-editor>
 
-                        <div class="config-section" id="education-editor-section" style="display: none;">
-                            <h3>🎓 Éditer les formations</h3>
-                            <p class="config-help">Modifiez le contenu de vos formations</p>
-                            <div id="education-editor">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
+                        <skills-editor></skills-editor>
 
-                        <div class="config-section" id="education-items-section">
-                            <h3>🎓 Formations à inclure</h3>
-                            <p class="config-help">Sélectionnez les formations à afficher</p>
-                            <div id="education-items" class="item-toggles">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
+                        <languages-editor></languages-editor>
 
-                        <div class="config-section" id="skills-selector-section" style="display: none;">
-                            <h3>🎯 Sélectionner les compétences</h3>
-                            <p class="config-help">Choisissez les compétences à afficher (cliquez-glissez pour réorganiser)</p>
-                            <div class="skills-search">
-                                <input type="text" id="skills-search" placeholder="Rechercher une compétence...">
-                            </div>
-                            <div id="skills-selector" class="item-toggles">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
-
-                        <div class="config-section" id="languages-editor-section" style="display: none;">
-                            <h3>🌍 Éditer les langues</h3>
-                            <p class="config-help">Modifiez vos compétences linguistiques</p>
-                            <div id="languages-editor">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
-
-                        <div class="config-section" id="certifications-editor-section" style="display: none;">
-                            <h3>📜 Éditer les certifications</h3>
-                            <p class="config-help">Modifiez vos certifications</p>
-                            <div id="certifications-editor">
-                                <!-- Will be populated by JavaScript -->
-                            </div>
-                        </div>
+                        <certifications-editor></certifications-editor>
 
                 </div>
 
@@ -393,6 +309,6 @@
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
