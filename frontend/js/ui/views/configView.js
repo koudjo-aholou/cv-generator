@@ -7,13 +7,19 @@ import { cvStateService } from '../../services/state/cvStateService.js';
 import { applyTemplateColors } from '../../business/template/presets.js';
 import { eventBus } from '../../core/dom/events.js';
 import { checkSectionHasData } from '../../business/cv/sections.js';
+import { SectionOrderEditor } from '../editors/section-order-editor.js';
 
 export class ConfigView {
+    constructor() {
+        this.sectionOrderEditor = new SectionOrderEditor();
+    }
+
     init() {
         this.setupSectionToggles();
         this.setupTemplateSelection();
         this.setupColorPickers();
         this.setupContactFields();
+        this.sectionOrderEditor.init();
 
         eventBus.on('data:parsed', () => this.populateFromData());
     }
