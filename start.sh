@@ -9,8 +9,21 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Check if venv exists
-if [ ! -d "backend/venv" ]; then
+# Check if venv exists and is valid
+VENV_VALID=0
+if [ -f "backend/venv/bin/python" ]; then
+    # Test if venv is working
+    if backend/venv/bin/python --version &> /dev/null; then
+        VENV_VALID=1
+        echo "✅ Environnement virtuel trouvé et valide"
+    fi
+fi
+
+if [ $VENV_VALID -eq 0 ]; then
+    if [ -d "backend/venv" ]; then
+        echo "⚠️  Environnement virtuel cassé détecté, suppression..."
+        rm -rf backend/venv
+    fi
     echo "📦 Création de l'environnement virtuel..."
     cd backend
     python3 -m venv venv
@@ -18,8 +31,6 @@ if [ ! -d "backend/venv" ]; then
     echo "📥 Installation des dépendances..."
     pip install -r requirements.txt
     cd ..
-else
-    echo "✅ Environnement virtuel trouvé"
 fi
 
 # Start backend
