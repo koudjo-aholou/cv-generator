@@ -35,27 +35,53 @@ import { PreviewView } from './ui/views/previewView.js';
 
 class Application {
     constructor() {
+        console.log('🔵 Application: constructor called');
         // Only instantiate coordinator views, not Web Components
-        this.configView = new ConfigView();
-        this.previewView = new PreviewView();
+        try {
+            console.log('🔵 Application: Creating ConfigView...');
+            this.configView = new ConfigView();
+            console.log('🔵 Application: ConfigView created');
+        } catch (error) {
+            console.error('🔴 Application: Error creating ConfigView:', error);
+        }
+
+        try {
+            console.log('🔵 Application: Creating PreviewView...');
+            this.previewView = new PreviewView();
+            console.log('🔵 Application: PreviewView created');
+        } catch (error) {
+            console.error('🔴 Application: Error creating PreviewView:', error);
+        }
     }
 
     async init() {
+        console.log('🔵 Application: init() called');
+
         // Initialize core UI managers
+        console.log('🔵 Application: Initializing loading...');
         loading.init();
+        console.log('🔵 Application: Initializing notifications...');
         notifications.init();
 
         // Initialize coordinator views
+        console.log('🔵 Application: Initializing configView...');
         this.configView.init();
+        console.log('🔵 Application: configView initialized');
+
+        console.log('🔵 Application: Initializing previewView...');
         this.previewView.init();
+        console.log('🔵 Application: previewView initialized');
 
         // Setup stepper navigation buttons
+        console.log('🔵 Application: Setting up stepper buttons...');
         this.setupStepperButtons();
 
         // Setup application-level event listeners
+        console.log('🔵 Application: Setting up event listeners...');
         this.setupEventListeners();
 
         // Setup global buttons
+        console.log('🔵 Application: Setting up global buttons...');
         this.setupGlobalButtons();
 
         console.log('✅ Application initialized');
