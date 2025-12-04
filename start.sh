@@ -19,10 +19,13 @@ echo "🐍 Utilisation de: $PYTHON_CMD"
 # Check if venv exists and is valid
 VENV_VALID=0
 if [ -f "backend/venv/bin/python" ]; then
-    # Test if venv is working
+    # Test if venv is working and pip is functional
     if backend/venv/bin/python --version &> /dev/null; then
-        VENV_VALID=1
-        echo "✅ Environnement virtuel trouvé et valide"
+        # Also test if pip works (pip has absolute paths that break when project moves)
+        if backend/venv/bin/python -m pip --version &> /dev/null; then
+            VENV_VALID=1
+            echo "✅ Environnement virtuel trouvé et valide"
+        fi
     fi
 fi
 
@@ -34,9 +37,9 @@ if [ $VENV_VALID -eq 0 ]; then
     echo "📦 Création de l'environnement virtuel..."
     cd backend
     $PYTHON_CMD -m venv venv
-    source venv/bin/activate
     echo "📥 Installation des dépendances..."
-    pip install -r requirements.txt
+    # Use python -m pip instead of pip to avoid shebang path issues
+    backend/venv/bin/python -m pip install -r requirements.txt
     cd ..
 fi
 
