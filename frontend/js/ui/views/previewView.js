@@ -8,6 +8,7 @@ import { previewService } from '../../services/ui/previewService.js';
 import { prepareDataForPdf } from '../../business/workflow/dataMapper.js';
 import { eventBus } from '../../core/dom/events.js';
 import { notifications } from '../../core/ui/notifications.js';
+import { emailService } from '../../services/api/emailService.js';
 
 export class PreviewView {
     constructor() {
@@ -15,6 +16,10 @@ export class PreviewView {
         this.previewLoading = null;
         this.refreshBtn = null;
         this.downloadBtn = null;
+        this.sendEmailBtn = null;
+        this.recipientEmailInput = null;
+        this.emailSubjectInput = null;
+        this.emailMessageInput = null;
     }
 
     init() {
@@ -22,6 +27,10 @@ export class PreviewView {
         this.previewLoading = $('previewLoading');
         this.refreshBtn = $('refreshPreviewBtn');
         this.downloadBtn = $('downloadFinalBtn');
+        this.sendEmailBtn = $('sendEmailBtn');
+        this.recipientEmailInput = $('recipient-email');
+        this.emailSubjectInput = $('email-subject');
+        this.emailMessageInput = $('email-message');
 
         this.setupEventListeners();
     }
@@ -36,6 +45,12 @@ export class PreviewView {
         if (this.downloadBtn) {
             this.downloadBtn.addEventListener('click', () => {
                 this.downloadPdf();
+            });
+        }
+
+        if (this.sendEmailBtn) {
+            this.sendEmailBtn.addEventListener('click', async () => {
+                await this.sendEmail();
             });
         }
 
@@ -94,6 +109,44 @@ export class PreviewView {
             previewService.downloadPdf();
         } catch (error) {
             notifications.showError(error.message);
+        }
+    }
+
+    async sendEmail() {
+        try {
+            // Get PDF blob
+            const blob = cvStateService.getPdfBlob();
+            if (!blob) {
+                notifications.showError('Aucun CV disponible. Veuillez générer le CV d\'abord.');
+                return;
+            }
+
+            // Get optional fields
+            const recipient = this.recipientEmailInput?.value.trim() || '';
+            const subject = this.emailSubjectInput?.value.trim() || 'Mon CV';
+            const message = this.emailMessageInput?.value.trim() || 'Bonjour,\n\nVeuillez trouver ci-joint mon CV.\n\nCordialement';
+
+            // Validate recipient email if provided
+            if (recipient) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(recipient)) {
+                    notifications.showError('Veuillez saisir une adresse email valide');
+                    return;
+                }
+            }
+
+            // First, download the CV
+            this.downloadPdf();
+
+            // Wait a bit to ensure download started
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Then open mail client with pre-filled data
+            emailService.openMailClient(recipient, subject, message);
+
+        } catch (error) {
+            // Error is already shown by emailService
+            console.error('Error opening mail client:', error);
         }
     }
 
