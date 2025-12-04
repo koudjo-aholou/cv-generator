@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Simple</title>
+</head>
+<body>
+    <h1>Test de Synchronisation</h1>
+    <p>Si vous voyez cette ligne, les fichiers sont à jour: <strong style="color: green;">VERSION 2025-12-04 13:45</strong></p>
+
+    <h2>Console Output:</h2>
+    <div id="output" style="background: #000; color: #0f0; padding: 1rem; font-family: monospace;"></div>
+
+    <script>
+        const output = document.getElementById('output');
+        function log(msg) {
+            console.log(msg);
+            output.innerHTML += msg + '<br>';
+        }
+
+        log('🟢 Test simple démarré');
+        log('🟢 JavaScript fonctionne');
+        log('🟢 Les fichiers sont à jour');
+
+        // Test d'import
+        log('🟡 Test d\'import de module...');
+    </script>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        function log(msg) {
+            console.log(msg);
+            output.innerHTML += msg + '<br>';
+        }
+
+        try {
+            log('🟢 Les modules ES6 fonctionnent');
+
+            // Test d'import du composant
+            import { SectionOrderEditor } from './js/ui/editors/section-order-editor.js';
+            log('🟢 SectionOrderEditor importé avec succès!');
+
+            const editor = new SectionOrderEditor();
+            log('🟢 SectionOrderEditor instancié avec succès!');
+
+        } catch (error) {
+            log('🔴 ERREUR: ' + error.message);
+            console.error(error);
+        }
+    </script>
+</body>
+</html>
