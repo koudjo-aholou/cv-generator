@@ -3,23 +3,41 @@
 echo "🚀 Démarrage de LinkedIn CV Generator..."
 echo ""
 
-# Check if Python is installed
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 n'est pas installé. Veuillez l'installer d'abord."
+# Detect which Python command to use
+PYTHON_CMD=""
+if command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+elif command -v python3 &> /dev/null; then
+    PYTHON_CMD="python3"
+else
+    echo "❌ Python n'est pas installé. Veuillez l'installer d'abord."
     exit 1
 fi
 
-# Check if venv exists
-if [ ! -d "backend/venv" ]; then
+echo "🐍 Utilisation de: $PYTHON_CMD"
+
+# Check if venv exists and is valid
+VENV_VALID=0
+if [ -f "backend/venv/bin/python" ]; then
+    # Test if venv is working
+    if backend/venv/bin/python --version &> /dev/null; then
+        VENV_VALID=1
+        echo "✅ Environnement virtuel trouvé et valide"
+    fi
+fi
+
+if [ $VENV_VALID -eq 0 ]; then
+    if [ -d "backend/venv" ]; then
+        echo "⚠️  Environnement virtuel cassé détecté, suppression..."
+        rm -rf backend/venv
+    fi
     echo "📦 Création de l'environnement virtuel..."
     cd backend
-    python3 -m venv venv
+    $PYTHON_CMD -m venv venv
     source venv/bin/activate
     echo "📥 Installation des dépendances..."
     pip install -r requirements.txt
     cd ..
-else
-    echo "✅ Environnement virtuel trouvé"
 fi
 
 # Start backend
@@ -38,7 +56,7 @@ sleep 3
 # Start frontend server
 echo "🌐 Démarrage du serveur frontend..."
 cd frontend
-python3 -m http.server 8080 &
+$PYTHON_CMD -m http.server 8080 &
 FRONTEND_PID=$!
 cd ..
 

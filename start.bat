@@ -10,8 +10,22 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Check if venv exists
-if not exist "backend\venv\" (
+REM Check if venv exists and is valid
+set VENV_VALID=0
+if exist "backend\venv\Scripts\python.exe" (
+    REM Test if venv is working
+    backend\venv\Scripts\python.exe --version >nul 2>&1
+    if not errorlevel 1 (
+        set VENV_VALID=1
+        echo ✅ Environnement virtuel trouvé et valide
+    )
+)
+
+if %VENV_VALID%==0 (
+    if exist "backend\venv\" (
+        echo ⚠️  Environnement virtuel cassé détecté, suppression...
+        rmdir /s /q "backend\venv"
+    )
     echo 📦 Création de l'environnement virtuel...
     cd backend
     python -m venv venv
@@ -19,8 +33,6 @@ if not exist "backend\venv\" (
     echo 📥 Installation des dépendances...
     pip install -r requirements.txt
     cd ..
-) else (
-    echo ✅ Environnement virtuel trouvé
 )
 
 REM Start backend
