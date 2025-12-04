@@ -11,15 +11,29 @@ import { SectionOrderEditor } from '../editors/section-order-editor.js';
 
 export class ConfigView {
     constructor() {
-        this.sectionOrderEditor = new SectionOrderEditor();
+        console.log('ConfigView: constructor called');
+        try {
+            this.sectionOrderEditor = new SectionOrderEditor();
+            console.log('ConfigView: SectionOrderEditor instance created');
+        } catch (error) {
+            console.error('ConfigView: Error creating SectionOrderEditor:', error);
+        }
     }
 
     init() {
+        console.log('ConfigView: init() called');
         this.setupSectionToggles();
         this.setupTemplateSelection();
         this.setupColorPickers();
         this.setupContactFields();
-        this.sectionOrderEditor.init();
+
+        console.log('ConfigView: About to initialize sectionOrderEditor');
+        try {
+            this.sectionOrderEditor.init();
+            console.log('ConfigView: sectionOrderEditor.init() completed');
+        } catch (error) {
+            console.error('ConfigView: Error initializing sectionOrderEditor:', error);
+        }
 
         eventBus.on('data:parsed', () => this.populateFromData());
     }
