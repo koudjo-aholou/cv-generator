@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Section Order Editor</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #section-order {
+            margin-top: 2rem;
+        }
+        .section-order-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: move;
+            margin-bottom: 0.5rem;
+        }
+        .section-order-item:hover {
+            background: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .drag-handle {
+            color: #999;
+            font-size: 1.2rem;
+            cursor: grab;
+        }
+        .order-buttons {
+            display: flex;
+            gap: 0.25rem;
+            margin-left: auto;
+        }
+        .order-btn {
+            padding: 0.25rem 0.5rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .order-btn:hover {
+            background: #2980b9;
+        }
+        .test-info {
+            background: #e8f4f8;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 2rem;
+        }
+        #console-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+        .log-entry.error {
+            color: #f48771;
+        }
+        .log-entry.warn {
+            color: #dcdcaa;
+        }
+        .log-entry.info {
+            color: #4ec9b0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Section Order Editor</h1>
+
+    <div class="test-info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Ouvrez la console du navigateur (F12)</li>
+            <li>Regardez si "SectionOrderEditor: init() called" apparaît</li>
+            <li>Vérifiez si les 6 sections apparaissent ci-dessous</li>
+        </ol>
+    </div>
+
+    <h2>🔄 Ordre des sections</h2>
+    <p>Faites glisser pour réorganiser</p>
+    <div id="section-order" class="section-order-list">
+        <!-- Will be populated by JavaScript -->
+    </div>
+
+    <h3>📋 Console Output</h3>
+    <div id="console-output"></div>
+
+    <script type="module">
+        // Intercept console.log for display
+        const consoleOutput = document.getElementById('console-output');
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        function addToConsole(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = message;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'info');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole('ERROR: ' + args.join(' '), 'error');
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole('WARN: ' + args.join(' '), 'warn');
+        };
+
+        console.log('=== Test Started ===');
+
+        // Import and test the module
+        import { SectionOrderEditor } from './frontend/js/ui/editors/section-order-editor.js';
+
+        console.log('SectionOrderEditor class imported successfully');
+
+        // Mock the required services
+        window.mockConfig = {
+            sections: {
+                summary: true,
+                experience: true,
+                education: true,
+                skills: true,
+                languages: true,
+                certifications: true
+            },
+            section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
+            colors: {
+                primary: '#3498db',
+                text: '#2c3e50',
+                secondary_text: '#7f8c8d'
+            }
+        };
+
+        console.log('Mock config created:', window.mockConfig);
+
+        // Try to create and initialize
+        try {
+            const editor = new SectionOrderEditor();
+            console.log('SectionOrderEditor instance created');
+
+            // Manually initialize since we don't have the full app context
+            const container = document.getElementById('section-order');
+            console.log('Container element:', container);
+
+            if (container) {
+                console.log('Container found, attempting manual render...');
+
+                const SECTION_NAMES = {
+                    summary: 'À Propos',
+                    experience: 'Expérience Professionnelle',
+                    education: 'Formation',
+                    skills: 'Compétences',
+                    languages: 'Langues',
+                    certifications: 'Certifications'
+                };
+
+                window.mockConfig.section_order.forEach((section, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'section-order-item';
+
+                    const dragHandle = document.createElement('span');
+                    dragHandle.className = 'drag-handle';
+                    dragHandle.textContent = '☰';
+
+                    const label = document.createElement('span');
+                    label.textContent = SECTION_NAMES[section] || section;
+
+                    const buttons = document.createElement('div');
+                    buttons.className = 'order-buttons';
+
+                    if (index > 0) {
+                        const upBtn = document.createElement('button');
+                        upBtn.textContent = '↑';
+                        upBtn.className = 'order-btn';
+                        buttons.appendChild(upBtn);
+                    }
+
+                    if (index < window.mockConfig.section_order.length - 1) {
+                        const downBtn = document.createElement('button');
+                        downBtn.textContent = '↓';
+                        downBtn.className = 'order-btn';
+                        buttons.appendChild(downBtn);
+                    }
+
+                    item.appendChild(dragHandle);
+                    item.appendChild(label);
+                    item.appendChild(buttons);
+
+                    container.appendChild(item);
+                    console.log(`Added section: ${section}`);
+                });
+
+                console.log('✅ Manual render complete!');
+            } else {
+                console.error('Container element not found!');
+            }
+        } catch (error) {
+            console.error('Error during initialization:', error);
+            console.error('Stack:', error.stack);
+        }
+
+        console.log('=== Test Complete ===');
+    </script>
+</body>
+</html>
