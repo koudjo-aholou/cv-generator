@@ -1,0 +1,2 @@
+# Ce fichier permet de garder le dossier cv/ dans Git
+# Les PDF générés ne seront pas committés (voir .gitignore)
