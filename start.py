@@ -58,17 +58,28 @@ def setup_venv():
     # Vérifier si le venv existe et est valide
     venv_valid = False
     if python_venv.exists():
-        # Tester si le venv fonctionne
+        # Tester si le venv fonctionne vraiment en vérifiant que pip fonctionne aussi
         try:
+            # Test 1: Python fonctionne
             result = subprocess.run(
                 [str(python_venv), "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                raise Exception("Python du venv ne fonctionne pas")
+
+            # Test 2: Vérifier que les chemins du venv sont corrects
+            # On teste si pip peut s'exécuter (pip contient des shebangs avec chemins absolus)
+            result = subprocess.run(
+                [str(python_venv), "-m", "pip", "--version"],
                 capture_output=True,
                 timeout=5
             )
             if result.returncode == 0:
                 venv_valid = True
                 print_colored("✅ Environnement virtuel trouvé et valide", Colors.GREEN)
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (subprocess.SubprocessError, FileNotFoundError, Exception):
             pass
 
     if not venv_valid:
@@ -82,7 +93,7 @@ def setup_venv():
 
     return python_venv, pip_venv
 
-def install_backend_dependencies(pip_venv):
+def install_backend_dependencies(python_venv):
     """Installer les dépendances du backend"""
     print_header("Installation des dépendances backend")
 
@@ -97,7 +108,8 @@ def install_backend_dependencies(pip_venv):
             f.write("Pillow==10.1.0\n")
 
     print_colored("📦 Installation des dépendances...", Colors.YELLOW)
-    subprocess.run([str(pip_venv), "install", "-r", "backend/requirements.txt"], check=True)
+    # Utiliser python -m pip au lieu de pip.exe directement pour éviter les problèmes de chemins
+    subprocess.run([str(python_venv), "-m", "pip", "install", "-r", "backend/requirements.txt"], check=True)
     print_colored("✅ Dépendances installées", Colors.GREEN)
 
 def start_backend(python_venv):
@@ -213,7 +225,7 @@ def main():
         python_venv, pip_venv = setup_venv()
 
         # Installer dépendances
-        install_backend_dependencies(pip_venv)
+        install_backend_dependencies(python_venv)
 
         # Démarrer les serveurs
         backend_process = start_backend(python_venv)
