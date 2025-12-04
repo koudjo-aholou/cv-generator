@@ -24,31 +24,60 @@ export class SectionOrderEditor {
     }
 
     init() {
+        console.log('SectionOrderEditor: init() called');
         this.container = $('section-order');
+        console.log('SectionOrderEditor: container =', this.container);
+
         if (!this.container) {
             console.error('section-order element not found');
             return;
         }
 
         // Listen for data parsed event
-        eventBus.on('data:parsed', () => this.render());
+        eventBus.on('data:parsed', () => {
+            console.log('SectionOrderEditor: data:parsed event received');
+            this.render();
+        });
 
         // Listen for config changes
-        eventBus.on('config:updated', () => this.render());
+        eventBus.on('config:updated', () => {
+            console.log('SectionOrderEditor: config:updated event received');
+            this.render();
+        });
+
+        // Try to render immediately if config already exists
+        const config = cvStateService.getConfig();
+        if (config && config.section_order && config.section_order.length > 0) {
+            console.log('SectionOrderEditor: config exists, rendering immediately');
+            this.render();
+        }
     }
 
     render() {
+        console.log('SectionOrderEditor: render() called');
         const config = cvStateService.getConfig();
         const sectionOrder = config.section_order || [];
+        console.log('SectionOrderEditor: sectionOrder =', sectionOrder);
 
-        if (!this.container) return;
+        if (!this.container) {
+            console.error('SectionOrderEditor: container is null, cannot render');
+            return;
+        }
 
         this.container.innerHTML = '';
 
+        if (sectionOrder.length === 0) {
+            console.warn('SectionOrderEditor: sectionOrder is empty');
+            return;
+        }
+
         sectionOrder.forEach((section, index) => {
+            console.log(`SectionOrderEditor: creating item for section ${section} at index ${index}`);
             const item = this.createSectionItem(section, index);
             this.container.appendChild(item);
         });
+
+        console.log(`SectionOrderEditor: rendered ${sectionOrder.length} items`);
     }
 
     createSectionItem(section, index) {
