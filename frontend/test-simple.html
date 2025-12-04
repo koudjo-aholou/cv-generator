@@ -27,6 +27,9 @@
     </script>
 
     <script type="module">
+        // Import DOIT être au niveau supérieur (pas dans try/catch)
+        import { SectionOrderEditor } from './js/ui/editors/section-order-editor.js';
+
         const output = document.getElementById('output');
         function log(msg) {
             console.log(msg);
@@ -35,9 +38,6 @@
 
         try {
             log('🟢 Les modules ES6 fonctionnent');
-
-            // Test d'import du composant
-            import { SectionOrderEditor } from './js/ui/editors/section-order-editor.js';
             log('🟢 SectionOrderEditor importé avec succès!');
 
             const editor = new SectionOrderEditor();
