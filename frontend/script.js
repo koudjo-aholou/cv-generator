@@ -332,6 +332,20 @@ function checkSectionHasData(section) {
 
 // Populate section order with drag and drop
 function populateSectionOrder() {
+    console.log('populateSectionOrder called');
+    console.log('sectionOrderList:', sectionOrderList);
+    console.log('currentConfig.section_order:', currentConfig.section_order);
+
+    if (!sectionOrderList) {
+        console.error('sectionOrderList element not found!');
+        return;
+    }
+
+    if (!currentConfig.section_order || currentConfig.section_order.length === 0) {
+        console.error('currentConfig.section_order is empty!');
+        return;
+    }
+
     sectionOrderList.innerHTML = '';
 
     const sectionNames = {
@@ -386,7 +400,10 @@ function populateSectionOrder() {
         item.addEventListener('dragend', handleDragEnd);
 
         sectionOrderList.appendChild(item);
+        console.log('Added section item:', section);
     });
+
+    console.log('populateSectionOrder completed, total items:', sectionOrderList.children.length);
 }
 
 let draggedItem = null;
