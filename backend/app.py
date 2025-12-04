@@ -193,25 +193,15 @@ def generate_pdf():
         generator = CVGenerator(data, config=config)
         pdf_path = generator.generate()
 
-        logger.info("PDF generated successfully")
+        logger.info(f"PDF generated successfully: {pdf_path}")
 
-        # Send file and clean up
+        # Send file (PDF is kept in cv/ folder)
         response = send_file(
             pdf_path,
             mimetype='application/pdf',
             as_attachment=True,
             download_name='cv.pdf'
         )
-
-        # Clean up after sending
-        @response.call_on_close
-        def cleanup():
-            try:
-                if os.path.exists(pdf_path):
-                    os.remove(pdf_path)
-                    logger.debug(f"Cleaned up PDF: {pdf_path}")
-            except Exception as e:
-                logger.error(f"Failed to cleanup PDF {pdf_path}: {e}")
 
         return response
 

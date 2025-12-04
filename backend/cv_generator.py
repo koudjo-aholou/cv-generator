@@ -12,6 +12,7 @@ import base64
 import re
 from io import BytesIO
 from PIL import Image as PILImage
+from datetime import datetime
 
 class CVGenerator:
     """Generate PDF CV from parsed LinkedIn data"""
@@ -690,10 +691,14 @@ class CVGenerator:
 
     def generate(self):
         """Generate the PDF CV"""
-        # Create temporary file
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-        pdf_path = temp_file.name
-        temp_file.close()
+        # Create CV folder if it doesn't exist
+        cv_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cv')
+        os.makedirs(cv_folder, exist_ok=True)
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+        filename = f"cv_{timestamp}.pdf"
+        pdf_path = os.path.join(cv_folder, filename)
 
         # Create PDF with better margins
         doc = SimpleDocTemplate(

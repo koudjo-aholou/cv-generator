@@ -33,6 +33,9 @@ Thumbs.db
 /tmp/
 /temp/
 
+# Generated CVs (saved locally)
+/cv/*.pdf
+
 # User data directory (for personal LinkedIn CSV files)
 my_data/*
 !my_data/.gitkeep
