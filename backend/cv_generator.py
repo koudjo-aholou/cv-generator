@@ -695,9 +695,19 @@ class CVGenerator:
         cv_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'cv')
         os.makedirs(cv_folder, exist_ok=True)
 
-        # Generate filename with timestamp
+        # Extract name from profile for filename
+        profile = self.data.get('profile', {})
+        last_name = profile.get('last_name', 'Inconnu').strip()
+        first_name = profile.get('first_name', '').strip()
+
+        # Clean names for filename (remove special characters)
+        import re
+        last_name_clean = re.sub(r'[^\w\s-]', '', last_name).replace(' ', '_')
+        first_name_clean = re.sub(r'[^\w\s-]', '', first_name).replace(' ', '_')
+
+        # Generate filename with name and timestamp
         timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
-        filename = f"cv_{timestamp}.pdf"
+        filename = f"CV_{last_name_clean.upper()}_{first_name_clean.capitalize()}_{timestamp}.pdf"
         pdf_path = os.path.join(cv_folder, filename)
 
         # Create PDF with better margins
