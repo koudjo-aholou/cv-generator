@@ -9,6 +9,7 @@ import sys
 import subprocess
 import time
 import signal
+import shutil
 from pathlib import Path
 
 # Couleurs pour le terminal
@@ -46,13 +47,6 @@ def setup_venv():
 
     venv_path = Path("backend/venv")
 
-    if not venv_path.exists():
-        print_colored("📦 Création de l'environnement virtuel...", Colors.YELLOW)
-        subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
-        print_colored("✅ Environnement virtuel créé", Colors.GREEN)
-    else:
-        print_colored("✅ Environnement virtuel déjà existant", Colors.GREEN)
-
     # Déterminer le chemin de l'exécutable Python dans le venv
     if os.name == 'nt':  # Windows
         python_venv = venv_path / "Scripts" / "python.exe"
@@ -60,6 +54,31 @@ def setup_venv():
     else:  # Unix/Linux/Mac
         python_venv = venv_path / "bin" / "python"
         pip_venv = venv_path / "bin" / "pip"
+
+    # Vérifier si le venv existe et est valide
+    venv_valid = False
+    if python_venv.exists():
+        # Tester si le venv fonctionne
+        try:
+            result = subprocess.run(
+                [str(python_venv), "--version"],
+                capture_output=True,
+                timeout=5
+            )
+            if result.returncode == 0:
+                venv_valid = True
+                print_colored("✅ Environnement virtuel trouvé et valide", Colors.GREEN)
+        except (subprocess.SubprocessError, FileNotFoundError):
+            pass
+
+    if not venv_valid:
+        if venv_path.exists():
+            print_colored("⚠️  Environnement virtuel cassé détecté, suppression...", Colors.YELLOW)
+            shutil.rmtree(venv_path)
+
+        print_colored("📦 Création de l'environnement virtuel...", Colors.YELLOW)
+        subprocess.run([sys.executable, "-m", "venv", str(venv_path)], check=True)
+        print_colored("✅ Environnement virtuel créé", Colors.GREEN)
 
     return python_venv, pip_venv
 
