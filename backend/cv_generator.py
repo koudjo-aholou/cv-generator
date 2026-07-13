@@ -74,7 +74,9 @@ class CVGenerator:
                 "\U00003000-\U0000303F"  # CJK symbols and punctuation
                 "\U0000FE00-\U0000FE0F"  # variation selectors (modificateurs d'emojis)
                 "\U0000FF00-\U0000FFEF"  # halfwidth and fullwidth forms
-                "\U00002000-\U0000206F"  # general punctuation (apostrophes déjà normalisées)
+                "\U00002000-\U00002012"  # general punctuation (avant – et —)
+                "\U00002015-\U00002021"  # general punctuation (après —, avant •)
+                "\U00002023-\U0000206F"  # general punctuation (après •, U+2022 préservé pour bullets)
                 "\U00002190-\U000021FF"  # arrows
                 "\U00002300-\U000023FF"  # miscellaneous technical
                 "\U00002460-\U000024FF"  # enclosed alphanumerics
@@ -84,7 +86,6 @@ class CVGenerator:
                 "\U00002A00-\U00002AFF"  # supplemental mathematical operators
                 "\U00003200-\U000032FF"  # enclosed CJK letters and months
                 "\U0000E000-\U0000F8FF"  # private use area
-                "\u2022"  # bullet point •
                 "\u2023"  # triangular bullet ‣
                 "\u25E6"  # white bullet ◦
                 "\u2043"  # hyphen bullet ⁃
@@ -190,15 +191,15 @@ class CVGenerator:
                         # Le premier item (avant le premier •) peut ne pas être un bullet
                         # Les suivants sont tous des bullets
                         if i == 0 and not line.startswith('•'):
-                            formatted_lines.append(f'• {part}')
+                            formatted_lines.append(f'&#8226; {part}')
                         else:
-                            formatted_lines.append(f'• {part}')
+                            formatted_lines.append(f'&#8226; {part}')
             # Détecter et formater les autres bullet points
             elif line.startswith('-') or line.startswith('*'):
-                formatted_lines.append(f'• {line[1:].strip()}')
+                formatted_lines.append(f'&#8226; {line[1:].strip()}')
             # Si c'est une liste détectée (emojis transformés en sauts de ligne), ajouter des bullets
             elif is_list:
-                formatted_lines.append(f'• {line}')
+                formatted_lines.append(f'&#8226; {line}')
             else:
                 # Ligne normale sans bullet (paragraphe simple)
                 formatted_lines.append(line)
@@ -284,7 +285,8 @@ class CVGenerator:
             textColor=colors.HexColor(self.colors['text']),
             spaceAfter=3,
             fontName='Helvetica-Bold',
-            leading=14
+            leading=14,
+            keepWithNext=1
         ))
 
         # Company style
@@ -295,7 +297,8 @@ class CVGenerator:
             textColor=colors.HexColor(self.colors['primary']),
             spaceAfter=3,
             fontName='Helvetica-Oblique',
-            leading=13
+            leading=13,
+            keepWithNext=1
         ))
 
         # Date/Location style
@@ -454,7 +457,8 @@ class CVGenerator:
             textColor=colors.HexColor(self.colors['text']),
             spaceAfter=3,
             fontName='Helvetica',
-            leading=13
+            leading=13,
+            keepWithNext=1
         ))
 
         # Date/Location style
@@ -595,7 +599,8 @@ class CVGenerator:
             textColor=colors.HexColor(self.colors['primary']),
             spaceAfter=3,
             fontName='Helvetica-Bold',
-            leading=15
+            leading=15,
+            keepWithNext=1
         ))
 
         # Company style
@@ -606,7 +611,8 @@ class CVGenerator:
             textColor=colors.HexColor(self.colors['text']),
             spaceAfter=3,
             fontName='Helvetica',
-            leading=14
+            leading=14,
+            keepWithNext=1
         ))
 
         # Date/Location style
@@ -1035,8 +1041,9 @@ class CVGenerator:
             if i < len(positions) - 1:
                 position_elements.append(Spacer(1, 4*mm))
 
-            # Keep each position together
-            elements.append(KeepTogether(position_elements))
+            # Flow freely — keepWithNext on header styles keeps title/company/dates together
+            for el in position_elements:
+                elements.append(el)
 
         elements.append(Spacer(1, 2*mm))
         return elements
