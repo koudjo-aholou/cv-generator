@@ -35,7 +35,7 @@ if %VENV_VALID%==0 (
     python -m venv venv
     echo 📥 Installation des dépendances...
     REM Use python -m pip instead of pip.exe to avoid shebang path issues
-    backend\venv\Scripts\python.exe -m pip install -r requirements.txt
+    venv\Scripts\python.exe -m pip install -r requirements.txt
     cd ..
 )
 
