@@ -189,15 +189,15 @@ class CVGenerator:
                         # Le premier item (avant le premier •) peut ne pas être un bullet
                         # Les suivants sont tous des bullets
                         if i == 0 and not line.startswith('•'):
-                            formatted_lines.append(f'• {part}')
+                            formatted_lines.append(f'&#8226; {part}')
                         else:
-                            formatted_lines.append(f'• {part}')
+                            formatted_lines.append(f'&#8226; {part}')
             # Détecter et formater les autres bullet points
             elif line.startswith('-') or line.startswith('*'):
-                formatted_lines.append(f'• {line[1:].strip()}')
+                formatted_lines.append(f'&#8226; {line[1:].strip()}')
             # Si c'est une liste détectée (emojis transformés en sauts de ligne), ajouter des bullets
             elif is_list:
-                formatted_lines.append(f'• {line}')
+                formatted_lines.append(f'&#8226; {line}')
             else:
                 # Ligne normale sans bullet (paragraphe simple)
                 formatted_lines.append(line)
