@@ -48,16 +48,21 @@ class TestEmojiCleaning(unittest.TestCase):
             self.assertNotIn(emoji, summary)
 
     def test_bullet_characters_removed(self):
-        """Les caractères bullet Unicode doivent être supprimés"""
-        bullets = '•‣◦⁃∙'
+        """Les caractères bullet Unicode variantes doivent être supprimés, mais • (U+2022) est préservé"""
+        # Ces bullets variantes sont supprimées
+        other_bullets = '‣◦⁃∙'
         data = {
-            'profile': {'summary': f'Test {bullets} avec bullets'},
+            'profile': {'summary': f'Test {other_bullets} avec bullets'},
             'positions': []
         }
         cv = CVGenerator(data)
         summary = cv.data['profile']['summary']
-        for bullet in bullets:
+        for bullet in other_bullets:
             self.assertNotIn(bullet, summary)
+        # Le bullet standard • (U+2022) est préservé pour être traité par _format_description
+        data2 = {'profile': {'summary': 'Item 1 • Item 2'}, 'positions': []}
+        cv2 = CVGenerator(data2)
+        self.assertIn('•', cv2.data['profile']['summary'])
 
 
 class TestApostropheNormalization(unittest.TestCase):
