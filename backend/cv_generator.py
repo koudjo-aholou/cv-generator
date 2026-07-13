@@ -84,7 +84,6 @@ class CVGenerator:
                 "\U00002A00-\U00002AFF"  # supplemental mathematical operators
                 "\U00003200-\U000032FF"  # enclosed CJK letters and months
                 "\U0000E000-\U0000F8FF"  # private use area
-                "\u2022"  # bullet point •
                 "\u2023"  # triangular bullet ‣
                 "\u25E6"  # white bullet ◦
                 "\u2043"  # hyphen bullet ⁃
