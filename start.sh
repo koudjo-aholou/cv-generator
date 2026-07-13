@@ -39,7 +39,7 @@ if [ $VENV_VALID -eq 0 ]; then
     $PYTHON_CMD -m venv venv
     echo "📥 Installation des dépendances..."
     # Use python -m pip instead of pip to avoid shebang path issues
-    backend/venv/bin/python -m pip install -r requirements.txt
+    venv/bin/python -m pip install -r requirements.txt
     cd ..
 fi
 
