@@ -8,6 +8,7 @@ Application web simple pour générer un CV professionnel à partir de votre exp
 - ✅ Parsing automatique des données (profil, expériences, formation, compétences, etc.)
 - ✅ Upload de photo de profil (optionnel)
 - ✅ Génération de CV en PDF professionnel
+- ✅ **Partage par email** - Envoyez votre CV directement par email
 - ✅ Interface simple et intuitive
 - ✅ **100% local** - Aucune donnée n'est sauvegardée
 - ✅ **Confidentialité garantie** - Tout est traité en mémoire
@@ -135,10 +136,14 @@ Ouvrez votre navigateur et allez à `http://localhost:8080`
 
 1. **Téléversez vos fichiers CSV** LinkedIn dans l'interface
 2. **Ajoutez une photo de profil** (optionnel) - JPG ou PNG, max 5MB
-3. Cliquez sur **"Analyser les données"**
-4. Vérifiez l'aperçu de vos données
-5. Cliquez sur **"Générer le CV en PDF"**
-6. Votre CV sera téléchargé automatiquement ! 🎉
+3. **Personnalisez votre CV** - Choisissez les sections à inclure et les couleurs
+4. **Prévisualisez** votre CV en temps réel
+5. **Téléchargez** votre CV en PDF - Votre CV sera téléchargé automatiquement ! 🎉
+6. **Partagez par email** (optionnel) - Cliquez sur "Ouvrir le client mail" pour :
+   - Télécharger automatiquement votre CV
+   - Ouvrir votre client mail (Gmail, Outlook, Thunderbird, etc.)
+   - Avec le destinataire, l'objet et le message pré-remplis
+   - Il vous suffira d'attacher le CV téléchargé et d'envoyer !
 
 ## 📁 Structure du projet
 

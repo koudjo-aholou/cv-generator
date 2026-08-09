@@ -1246,3 +1246,36 @@ languages-editor,
 certifications-editor {
     margin: 2rem 0;
 }
+
+/* Email Share Section */
+.email-share-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: var(--secondary-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.email-share-section h3 {
+    color: var(--primary-color);
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.email-form {
+    margin-top: 1rem;
+}
+
+.email-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.email-form .form-group:last-of-type {
+    margin-bottom: 1.5rem;
+}
+
+.email-form button {
+    width: 100%;
+    margin-top: 0;
+}
