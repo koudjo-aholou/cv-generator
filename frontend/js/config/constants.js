@@ -19,11 +19,21 @@ export const PHOTO_CONSTRAINTS = {
     ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png']
 };
 
-export const SECTION_NAMES = {
-    summary: 'À Propos',
-    experience: 'Expérience Professionnelle',
-    education: 'Formation',
-    skills: 'Compétences',
-    languages: 'Langues',
-    certifications: 'Certifications'
+export const SECTION_NAMES_BY_LANG = {
+    fr: {
+        about: 'À Propos',
+        experience: 'Expériences Professionnelles',
+        education: 'Formations',
+        skills: 'Compétences',
+        languages: 'Langues',
+        certifications: 'Certifications'
+    },
+    en: {
+        about: 'About',
+        experience: 'Professional Experience',
+        education: 'Education',
+        skills: 'Skills',
+        languages: 'Languages',
+        certifications: 'Certifications'
+    }
 };

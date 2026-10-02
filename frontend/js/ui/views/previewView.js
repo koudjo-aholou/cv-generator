@@ -81,9 +81,15 @@ export class PreviewView {
         const photoFile = cvStateService.getPhoto();
 
         const contactInfo = {
+            headline: $('profile-headline')?.value || '',
             email: $('contact-email')?.value || '',
             phone: $('contact-phone')?.value || '',
-            address: $('contact-address')?.value || ''
+            address: $('contact-address')?.value || '',
+            summary: $('profile-summary')?.value || '',
+            birthDate: $('contact-birth-date')?.value || '',
+            nationality: $('contact-nationality')?.value || '',
+            civilStatus: $('contact-civil-status')?.value || '',
+            permit: $('contact-permit')?.value || ''
         };
 
         return prepareDataForPdf(parsedData, config, contactInfo, photoFile);
