@@ -99,6 +99,10 @@
                             <p class="config-help">Modifiez vos coordonnées si nécessaire</p>
                             <div class="contact-fields">
                                 <div class="form-group">
+                                    <label for="profile-headline">Intitulé</label>
+                                    <input type="text" id="profile-headline" placeholder="Ex: Développeur Full Stack">
+                                </div>
+                                <div class="form-group">
                                     <label for="contact-email">Email</label>
                                     <input type="email" id="contact-email" placeholder="votre.email@exemple.com">
                                 </div>
@@ -113,8 +117,8 @@
                             </div>
                         </div>
 
-                        <div class="config-section" id="profile-summary-section" style="display: none;">
-                            <h3>📝 Résumé professionnel</h3>
+                        <div class="config-section" id="profile-summary-section">
+                            <h3>📝 À propos</h3>
                             <p class="config-help">Éditez votre résumé / à propos</p>
                             <div class="form-group">
                                 <textarea id="profile-summary" rows="6" placeholder="Décrivez votre profil professionnel..."></textarea>
@@ -202,6 +206,19 @@
                                     <input type="checkbox" id="toggle-certifications" checked>
                                     <span>Certifications</span>
                                 </label>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>✏️ Intitulés des sections</h3>
+                            <p class="config-help">Personnalisez les titres affichés dans le CV</p>
+                            <div class="labels-grid">
+                                <div class="form-group"><label for="label-about">À Propos</label><input type="text" id="label-about" placeholder="À Propos"></div>
+                                <div class="form-group"><label for="label-experience">Expériences</label><input type="text" id="label-experience" placeholder="Expériences Professionnelles"></div>
+                                <div class="form-group"><label for="label-education">Formation</label><input type="text" id="label-education" placeholder="Formation"></div>
+                                <div class="form-group"><label for="label-skills">Compétences</label><input type="text" id="label-skills" placeholder="Compétences"></div>
+                                <div class="form-group"><label for="label-languages">Langues</label><input type="text" id="label-languages" placeholder="Langues"></div>
+                                <div class="form-group"><label for="label-certifications">Certifications</label><input type="text" id="label-certifications" placeholder="Certifications"></div>
                             </div>
                         </div>
 

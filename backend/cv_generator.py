@@ -11,7 +11,7 @@ import tempfile
 import base64
 import re
 from io import BytesIO
-from PIL import Image as PILImage
+from PIL import Image as PILImage, ImageDraw
 from datetime import datetime
 
 class CVGenerator:
@@ -33,6 +33,17 @@ class CVGenerator:
 
         # Extract template from config or use default
         self.template = self.config.get('template', 'modern')
+
+        # Section titles — overridable via config
+        labels = self.config.get('labels', {})
+        self.labels = {
+            'about':          labels.get('about',          'À Propos'),
+            'experience':     labels.get('experience',     'Expériences Professionnelles'),
+            'education':      labels.get('education',      'Formation'),
+            'skills':         labels.get('skills',         'Compétences'),
+            'languages':      labels.get('languages',      'Langues'),
+            'certifications': labels.get('certifications', 'Certifications'),
+        }
 
         self._setup_custom_styles()
 
@@ -788,108 +799,98 @@ class CVGenerator:
         elements = []
         profile = self.data.get('profile', {})
 
-        # Check if we have a photo
-        has_photo = self.data.get('photo') is not None
+        # Build info block (name, headline, contact) shared whether or not a photo is provided
+        info_elements = []
 
-        if has_photo:
-            # Build header with photo using table layout
-            info_elements = []
+        # Full name
+        full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
+        if full_name:
+            info_elements.append(Paragraph(full_name, self.styles['Name']))
 
-            # Full name
-            full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
-            if full_name:
-                info_elements.append(Paragraph(full_name, self.styles['Name']))
+        # Headline
+        if profile.get('headline'):
+            info_elements.append(Paragraph(profile['headline'], self.styles['Headline']))
 
-            # Headline
-            if profile.get('headline'):
-                info_elements.append(Paragraph(profile['headline'], self.styles['Headline']))
+        # Contact info
+        contact_lines = []
 
-            # Contact info
-            contact_lines = []
+        line1_parts = []
+        if profile.get('email'):
+            line1_parts.append(f"Email: {profile['email']}")
+        if profile.get('phone'):
+            line1_parts.append(f"Tel: {profile['phone']}")
 
-            line1_parts = []
-            if profile.get('email'):
-                line1_parts.append(f"Email: {profile['email']}")
-            if profile.get('phone'):
-                line1_parts.append(f"Tel: {profile['phone']}")
+        if line1_parts:
+            contact_lines.append(' | '.join(line1_parts))
 
-            if line1_parts:
-                contact_lines.append(' | '.join(line1_parts))
+        if profile.get('address'):
+            contact_lines.append(f"Adresse: {profile['address']}")
 
-            if profile.get('address'):
-                contact_lines.append(f"Adresse: {profile['address']}")
+        for line in contact_lines:
+            info_elements.append(Paragraph(line, self.styles['Contact']))
 
-            for line in contact_lines:
-                info_elements.append(Paragraph(line, self.styles['Contact']))
+        # Always render a photo column: use the uploaded photo, or a placeholder
+        # avatar to keep a consistent layout when no photo was provided.
+        photo_img = self._create_photo_image()
 
-            # Create photo image
-            photo_img = self._create_photo_image()
+        if photo_img is not None:
+            # Create table with info on left and photo on right
+            header_table = Table([[info_elements, photo_img]], colWidths=[130*mm, 40*mm])
+            header_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ]))
 
-            # Only create table layout if photo loaded successfully
-            if photo_img is not None:
-                # Create table with info on left and photo on right
-                header_table = Table([[info_elements, photo_img]], colWidths=[130*mm, 40*mm])
-                header_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                    ('TOPPADDING', (0, 0), (-1, -1), 0),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-                ]))
-
-                elements.append(header_table)
-            else:
-                # Photo failed to load, use regular layout
-                elements.extend(info_elements)
-
+            elements.append(header_table)
         else:
-            # Build header without photo (original layout)
-            # Full name
-            full_name = f"{profile.get('first_name', '')} {profile.get('last_name', '')}".strip()
-            if full_name:
-                elements.append(Paragraph(full_name, self.styles['Name']))
-
-            # Headline
-            if profile.get('headline'):
-                elements.append(Paragraph(profile['headline'], self.styles['Headline']))
-
-            # Contact info on multiple lines for better readability
-            contact_lines = []
-
-            line1_parts = []
-            if profile.get('email'):
-                line1_parts.append(f"Email: {profile['email']}")
-            if profile.get('phone'):
-                line1_parts.append(f"Tel: {profile['phone']}")
-
-            if line1_parts:
-                contact_lines.append(' | '.join(line1_parts))
-
-            if profile.get('address'):
-                contact_lines.append(f"Adresse: {profile['address']}")
-
-            for line in contact_lines:
-                elements.append(Paragraph(line, self.styles['Contact']))
+            # Photo failed to load, use regular layout
+            elements.extend(info_elements)
 
         elements.append(Spacer(1, 4*mm))
 
         return elements
 
+    def _create_placeholder_avatar(self):
+        """Generate a generic silhouette avatar used when no photo was provided"""
+        size = 400
+        bg_color = (225, 227, 230)
+        fg_color = (165, 170, 178)
+
+        pil_image = PILImage.new('RGB', (size, size), bg_color)
+        draw = ImageDraw.Draw(pil_image)
+
+        # Head
+        head_r = size * 0.17
+        cx, cy = size / 2, size * 0.36
+        draw.ellipse([cx - head_r, cy - head_r, cx + head_r, cy + head_r], fill=fg_color)
+
+        # Shoulders
+        body_w = size * 0.64
+        draw.ellipse([size / 2 - body_w / 2, size * 0.62, size / 2 + body_w / 2, size * 1.2], fill=fg_color)
+
+        return pil_image
+
     def _create_photo_image(self):
-        """Create photo image from base64 data with fixed square dimensions"""
+        """Create photo image from base64 data (or a placeholder) with fixed square dimensions"""
         try:
             photo_data = self.data.get('photo', '')
 
-            # Remove data URL prefix if present
-            if 'base64,' in photo_data:
-                photo_data = photo_data.split('base64,')[1]
+            if photo_data:
+                # Remove data URL prefix if present
+                if 'base64,' in photo_data:
+                    photo_data = photo_data.split('base64,')[1]
 
-            # Decode base64
-            image_data = base64.b64decode(photo_data)
+                # Decode base64
+                image_data = base64.b64decode(photo_data)
 
-            # Open image with PIL
-            pil_image = PILImage.open(BytesIO(image_data))
+                # Open image with PIL
+                pil_image = PILImage.open(BytesIO(image_data))
+            else:
+                pil_image = self._create_placeholder_avatar()
 
             # Convert to RGB if necessary (handles PNG with transparency)
             if pil_image.mode in ('RGBA', 'LA', 'P'):
@@ -957,7 +958,7 @@ class CVGenerator:
         elements = []
         profile = self.data.get('profile', {})
 
-        elements.extend(self._create_section_header("À Propos"))
+        elements.extend(self._create_section_header(self.labels['about']))
 
         formatted_summary = self._format_description(profile['summary'])
         summary_para = Paragraph(formatted_summary, self.styles['Summary'])
@@ -969,7 +970,7 @@ class CVGenerator:
         """Build experience section"""
         elements = []
 
-        elements.extend(self._create_section_header("Expérience Professionnelle"))
+        elements.extend(self._create_section_header(self.labels['experience']))
 
         # Get visible positions configuration
         visible_indices = self.config.get('experience_visible')
@@ -1054,7 +1055,7 @@ class CVGenerator:
         section_content = []
 
         # Add section header
-        section_content.extend(self._create_section_header("Formation"))
+        section_content.extend(self._create_section_header(self.labels['education']))
 
         # Get visible education configuration
         visible_indices = self.config.get('education_visible')
@@ -1114,7 +1115,7 @@ class CVGenerator:
         section_content = []
 
         # Add section header
-        section_content.extend(self._create_section_header("Compétences"))
+        section_content.extend(self._create_section_header(self.labels['skills']))
 
         skills = self.data.get('skills', [])
 
@@ -1158,7 +1159,7 @@ class CVGenerator:
         section_content = []
 
         # Add section header
-        section_content.extend(self._create_section_header("Langues"))
+        section_content.extend(self._create_section_header(self.labels['languages']))
 
         # Build language items
         for lang in self.data.get('languages', []):
@@ -1181,7 +1182,7 @@ class CVGenerator:
         section_content = []
 
         # Add section header
-        section_content.extend(self._create_section_header("Certifications"))
+        section_content.extend(self._create_section_header(self.labels['certifications']))
 
         # Build all certifications
         for i, cert in enumerate(self.data.get('certifications', [])):

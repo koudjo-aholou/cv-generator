@@ -19,9 +19,23 @@ export class ConfigView {
         this.setupTemplateSelection();
         this.setupColorPickers();
         this.setupContactFields();
+        this.setupLabelInputs();
         this.sectionOrderEditor.init();
 
         eventBus.on('data:parsed', () => this.populateFromData());
+    }
+
+    setupLabelInputs() {
+        ['about', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(key => {
+            const input = document.getElementById(`label-${key}`);
+            if (!input) return;
+            input.addEventListener('input', () => {
+                const config = cvStateService.getConfig();
+                if (!config.labels) config.labels = {};
+                config.labels[key] = input.value.trim() || undefined;
+                cvStateService.setConfig(config);
+            });
+        });
     }
 
     setupSectionToggles() {
@@ -95,13 +109,17 @@ export class ConfigView {
 
         // Populate contact fields
         if (parsedData.profile) {
+            const headline = $('profile-headline');
             const email = $('contact-email');
             const phone = $('contact-phone');
             const address = $('contact-address');
+            const summary = $('profile-summary');
 
+            if (headline && parsedData.profile.headline) headline.value = parsedData.profile.headline;
             if (email && parsedData.profile.email) email.value = parsedData.profile.email;
             if (phone && parsedData.profile.phone) phone.value = parsedData.profile.phone;
             if (address && parsedData.profile.address) address.value = parsedData.profile.address;
+            if (summary && parsedData.profile.summary) summary.value = parsedData.profile.summary;
         }
 
         // Update section toggles
