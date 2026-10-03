@@ -8,6 +8,7 @@ import { applyTemplateColors } from '../../business/template/presets.js';
 import { eventBus } from '../../core/dom/events.js';
 import { checkSectionHasData } from '../../business/cv/sections.js';
 import { SectionOrderEditor } from '../editors/section-order-editor.js';
+import { SECTION_NAMES_BY_LANG } from '../../config/constants.js';
 
 export class ConfigView {
     constructor() {
@@ -19,9 +20,64 @@ export class ConfigView {
         this.setupTemplateSelection();
         this.setupColorPickers();
         this.setupContactFields();
+        this.setupLabelInputs();
+        this.setupLanguageAndCvType();
         this.sectionOrderEditor.init();
 
         eventBus.on('data:parsed', () => this.populateFromData());
+    }
+
+    setupLanguageAndCvType() {
+        const languageSelect = $('cv-language');
+        const cvTypeSelect = $('cv-type');
+        const swissSection = $('swiss-fields-section');
+
+        if (languageSelect) {
+            languageSelect.addEventListener('change', (e) => {
+                const language = e.target.value;
+                const config = cvStateService.getConfig();
+                config.language = language;
+
+                // Switching language resets the section labels to that
+                // language's defaults, overwriting any customization —
+                // keeping French titles on an English CV is never wanted.
+                const defaults = SECTION_NAMES_BY_LANG[language];
+                Object.keys(defaults).forEach((key) => {
+                    const input = document.getElementById(`label-${key}`);
+                    if (input) input.value = defaults[key];
+                });
+                config.labels = { ...defaults };
+                cvStateService.setConfig(config);
+
+                eventBus.emit('config:language-changed', language);
+            });
+        }
+
+        if (cvTypeSelect) {
+            cvTypeSelect.addEventListener('change', (e) => {
+                const cvType = e.target.value;
+                const config = cvStateService.getConfig();
+                config.cv_type = cvType;
+                cvStateService.setConfig(config);
+
+                if (swissSection) {
+                    swissSection.style.display = cvType === 'swiss' ? '' : 'none';
+                }
+            });
+        }
+    }
+
+    setupLabelInputs() {
+        ['about', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(key => {
+            const input = document.getElementById(`label-${key}`);
+            if (!input) return;
+            input.addEventListener('input', () => {
+                const config = cvStateService.getConfig();
+                if (!config.labels) config.labels = {};
+                config.labels[key] = input.value.trim() || undefined;
+                cvStateService.setConfig(config);
+            });
+        });
     }
 
     setupSectionToggles() {
@@ -95,13 +151,17 @@ export class ConfigView {
 
         // Populate contact fields
         if (parsedData.profile) {
+            const headline = $('profile-headline');
             const email = $('contact-email');
             const phone = $('contact-phone');
             const address = $('contact-address');
+            const summary = $('profile-summary');
 
+            if (headline && parsedData.profile.headline) headline.value = parsedData.profile.headline;
             if (email && parsedData.profile.email) email.value = parsedData.profile.email;
             if (phone && parsedData.profile.phone) phone.value = parsedData.profile.phone;
             if (address && parsedData.profile.address) address.value = parsedData.profile.address;
+            if (summary && parsedData.profile.summary) summary.value = parsedData.profile.summary;
         }
 
         // Update section toggles

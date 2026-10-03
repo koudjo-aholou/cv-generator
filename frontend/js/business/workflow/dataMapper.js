@@ -11,6 +11,9 @@ export const prepareDataForPdf = async (parsedData, config, contactInfo, photoFi
     if (!dataToSend.profile) {
         dataToSend.profile = {};
     }
+    if (contactInfo.headline) {
+        dataToSend.profile.headline = contactInfo.headline;
+    }
     if (contactInfo.email) {
         dataToSend.profile.email = contactInfo.email;
     }
@@ -19,6 +22,21 @@ export const prepareDataForPdf = async (parsedData, config, contactInfo, photoFi
     }
     if (contactInfo.address) {
         dataToSend.profile.address = contactInfo.address;
+    }
+    if (contactInfo.summary) {
+        dataToSend.profile.summary = contactInfo.summary;
+    }
+    if (contactInfo.birthDate) {
+        dataToSend.profile.birth_date = contactInfo.birthDate;
+    }
+    if (contactInfo.nationality) {
+        dataToSend.profile.nationality = contactInfo.nationality;
+    }
+    if (contactInfo.civilStatus) {
+        dataToSend.profile.civil_status = contactInfo.civilStatus;
+    }
+    if (contactInfo.permit) {
+        dataToSend.profile.permit = contactInfo.permit;
     }
 
     // Update skills if specific skills are selected

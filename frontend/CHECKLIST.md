@@ -126,7 +126,7 @@ Refactoriser le fichier monolithique `script.js` (1906 lignes) en architecture m
 ## ✅ Phase 6 : Git et Versioning
 
 - [x] Commit des changements avec message descriptif
-- [x] Push vers la branche `claude/refactor-long-js-file-011CUsNQxuFt4HvmfBP5qrhU`
+- [x] Push vers la branche de refactorisation
 - [x] Vérifier que tous les fichiers sont trackés
 
 **Fichiers modifiés : 47**

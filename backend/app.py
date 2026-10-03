@@ -189,6 +189,11 @@ def generate_pdf():
         # Extract config if provided
         config = data.pop('config', None) if 'config' in data else None
 
+        # config must be an object: a string/list/number would otherwise reach
+        # CVGenerator and raise AttributeError on .get(), surfacing as a 500
+        if config is not None and not isinstance(config, dict):
+            return jsonify({"error": "Invalid config format"}), 400
+
         # Generate PDF with config
         generator = CVGenerator(data, config=config)
         pdf_path = generator.generate()

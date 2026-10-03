@@ -438,5 +438,128 @@ def test_linkedin_parser_maintains_structure():
     assert 'certifications' in parsed_data
 
 
+def test_generate_pdf_with_english_language(client, sample_linkedin_data):
+    """Test that the language config is accepted and produces a PDF"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {'language': 'en'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_generate_pdf_with_swiss_cv_type(client, sample_linkedin_data):
+    """Test that a Swiss CV with extended personal info generates successfully"""
+    data = sample_linkedin_data.copy()
+    data['profile'] = {
+        **sample_linkedin_data['profile'],
+        'birth_date': '1990-05-21',
+        'nationality': 'Suisse',
+        'civil_status': 'Célibataire',
+        'permit': 'Permis C'
+    }
+    data['config'] = {'cv_type': 'swiss', 'language': 'fr'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_generate_pdf_with_custom_labels(client, sample_linkedin_data):
+    """Test that custom section labels are accepted by the API"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'language': 'fr',
+        'labels': {'education': 'Parcours Académique', 'skills': 'Savoir-faire'}
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_unknown_language_falls_back(client, sample_linkedin_data):
+    """Test that an unsupported language code does not break generation"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {'language': 'de'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+@pytest.mark.parametrize('bad_config', ['une chaine', [1, 2], 42, True])
+def test_generate_pdf_rejects_non_object_config(client, sample_linkedin_data, bad_config):
+    """Regression: a non-object config used to raise AttributeError -> HTTP 500"""
+    data = sample_linkedin_data.copy()
+    data['config'] = bad_config
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 400
+    assert 'config' in response.get_json()['error'].lower()
+
+
+@pytest.mark.parametrize('empty_config', [None, {}])
+def test_generate_pdf_accepts_absent_or_empty_config(client, sample_linkedin_data, empty_config):
+    """Test that a null or empty config still generates with defaults"""
+    data = sample_linkedin_data.copy()
+    data['config'] = empty_config
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_hostile_xml_in_profile(client, sample_linkedin_data):
+    """Regression: a '<' in a profile field used to abort rendering with a 500"""
+    data = sample_linkedin_data.copy()
+    data['profile'] = {
+        **sample_linkedin_data['profile'],
+        'address': 'Rue <test> 5 & 6',
+        'headline': '<b>Dev</b>'
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])

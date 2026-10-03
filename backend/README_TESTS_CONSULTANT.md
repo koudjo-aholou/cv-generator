@@ -7,15 +7,13 @@ Ce fichier contient des tests automatisés pour valider le système de fusion au
 ### Avec pytest (recommandé)
 
 ```bash
-cd backend
-python3 -m pytest test_consultant_missions.py -v
+python3 -m pytest tests/business/test_consultant_missions.py -v
 ```
 
 ### Avec unittest
 
 ```bash
-cd backend
-python3 test_consultant_missions.py
+python3 -m unittest tests.business.test_consultant_missions -v
 ```
 
 ## 📋 Couverture des tests (50 tests)
@@ -343,6 +341,6 @@ Les tests doivent être exécutés :
 ## 🔗 Fichiers liés
 
 - `linkedin_parser.py` : Code source du parser
-- `test_consultant_missions.py` : Tests unitaires (ce fichier)
+- `tests/business/test_consultant_missions.py` : Tests unitaires
 - `GUIDE_MISSIONS_CONSULTANT.md` : Guide utilisateur complet
-- `test_cv_generator.py` : Tests pour le générateur de CV
+- `tests/business/test_cv_generator.py` : Tests pour le générateur de CV

@@ -51,3 +51,6 @@ my_data/*
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Paramètres locaux d'outillage (personnels, non partagés)
+.claude/settings.local.json

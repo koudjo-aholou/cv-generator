@@ -6,14 +6,14 @@ import { $ } from '../../core/dom/elements.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import { moveSectionUp, moveSectionDown, reorderSection } from '../../business/cv/sections.js';
 import { eventBus } from '../../core/dom/events.js';
+import { SECTION_NAMES_BY_LANG } from '../../config/constants.js';
 
-const SECTION_NAMES = {
-    summary: 'À Propos',
-    experience: 'Expérience Professionnelle',
-    education: 'Formation',
-    skills: 'Compétences',
-    languages: 'Langues',
-    certifications: 'Certifications'
+// The section order uses the key 'summary' where the CV labels use 'about'
+const LABEL_KEY_BY_SECTION = { summary: 'about' };
+
+const getSectionName = (section, language) => {
+    const names = SECTION_NAMES_BY_LANG[language] || SECTION_NAMES_BY_LANG.fr;
+    return names[LABEL_KEY_BY_SECTION[section] || section] || section;
 };
 
 export class SectionOrderEditor {
@@ -33,8 +33,8 @@ export class SectionOrderEditor {
         // Listen for data parsed event
         eventBus.on('data:parsed', () => this.render());
 
-        // Listen for config changes
-        eventBus.on('config:updated', () => this.render());
+        // Re-render so the section names follow the selected CV language
+        eventBus.on('config:language-changed', () => this.render());
     }
 
     render() {
@@ -68,7 +68,7 @@ export class SectionOrderEditor {
 
         // Section label
         const label = document.createElement('span');
-        label.textContent = SECTION_NAMES[section] || section;
+        label.textContent = getSectionName(section, config.language);
 
         // Button container
         const buttons = document.createElement('div');

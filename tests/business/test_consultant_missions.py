@@ -8,10 +8,17 @@ Ces tests valident :
 """
 
 import unittest
+import sys
+import os
+
+# Add backend to path (works under pytest and plain unittest alike)
+backend_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'backend')
+sys.path.insert(0, os.path.abspath(backend_dir))
+
 from linkedin_parser import LinkedInParser
 from datetime import datetime
 import tempfile
-import os
+import shutil
 
 
 class TestClientNameExtraction(unittest.TestCase):
@@ -221,12 +228,13 @@ class TestConsultantPositionsMerging(unittest.TestCase):
     def test_simple_merge_two_positions(self):
         """Fusion simple : 2 positions même entreprise qui se chevauchent"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant Développeur,,Paris,2020-01,2020-12
 Zenika,Software Engineer @ Aircall,"Description détaillée de la mission",Remote,2020-03,2020-08
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -249,13 +257,11 @@ Zenika,Software Engineer @ Aircall,"Description détaillée de la mission",Remot
         self.assertEqual(mission['client'], 'Aircall')
         self.assertIn('Aircall', mission['title'])
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_merge_multiple_missions(self):
         """Fusion avec plusieurs missions pour la même entreprise"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Accenture,Senior Consultant,,Paris,2019-01,2021-12
 Accenture,Java Developer @ Société Générale,"Mission bancaire",Paris,2019-01,2019-06
@@ -263,7 +269,7 @@ Accenture,Tech Lead for Carrefour,"Refonte e-commerce",Lyon,2019-07,2020-03
 Accenture,Architect chez Orange,"Architecture cloud",Paris,2020-04,2021-12
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -282,19 +288,17 @@ Accenture,Architect chez Orange,"Architecture cloud",Paris,2020-04,2021-12
         self.assertIn('Carrefour', clients)
         self.assertIn('Orange', clients)
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_no_merge_different_companies(self):
         """Pas de fusion : entreprises différentes"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,2020-01,2020-12
 Accenture,Developer @ Client,"Description",Paris,2020-03,2020-08
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -307,19 +311,17 @@ Accenture,Developer @ Client,"Description",Paris,2020-03,2020-08
         for pos in data['positions']:
             self.assertNotIn('missions', pos)
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_no_merge_no_overlap(self):
         """Pas de fusion : dates ne se chevauchent pas"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,2019-01,2019-12
 Zenika,Developer @ Client,"Description",Paris,2020-01,2020-12
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -328,19 +330,17 @@ Zenika,Developer @ Client,"Description",Paris,2020-01,2020-12
         # Vérifier qu'on a 2 positions séparées
         self.assertEqual(len(data['positions']), 2)
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_merge_keeps_longer_description(self):
         """La fusion garde la position avec la description la plus longue comme mission"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,Short description here,Paris,2020-01,2020-12
 Zenika,Developer @ Aircall,"Very very very very very very long detailed description of the mission with lots of information about the work done",Remote,2020-03,2020-08
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -351,20 +351,18 @@ Zenika,Developer @ Aircall,"Very very very very very very long detailed descript
         self.assertIn('Very very very', mission['description'])
         self.assertGreater(len(mission['description']), 50)
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_merge_with_linkedin_date_format(self):
         """Test avec le format de dates réel de LinkedIn (Jan 2020)"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         # Format exact exporté par LinkedIn
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Developpeur Js,,Paris,Jan 2020,Oct 2020
 Zenika,Software Engineer @ Aircall,"Mission chez Aircall avec description détaillée",Remote,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -387,13 +385,11 @@ Zenika,Software Engineer @ Aircall,"Mission chez Aircall avec description détai
         self.assertEqual(mission['client'], 'Aircall')
         self.assertIn('Aircall', mission['title'])
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_multiple_companies_with_missions(self):
         """Plusieurs entreprises, chacune avec ses missions"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant Développeur,,Paris,2020-01,2020-12
 Zenika,Developer @ Aircall,"Mission Aircall",Remote,2020-03,2020-08
@@ -404,7 +400,7 @@ Freelance,Backend @ Netflix,"Mission Netflix",Remote,2021-01,2021-06
 Freelance,Frontend chez Spotify,"Mission Spotify",Remote,2021-07,2023-12
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -422,9 +418,6 @@ Freelance,Frontend chez Spotify,"Mission Spotify",Remote,2021-07,2023-12
         total_missions = sum(len(pos['missions']) for pos in data['positions'])
         self.assertEqual(total_missions, 4)  # Zenika:1 + Accenture:1 + Freelance:2 = 4
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
 
 class TestConsultantMissionsEdgeCases(unittest.TestCase):
@@ -440,11 +433,12 @@ class TestConsultantMissionsEdgeCases(unittest.TestCase):
     def test_single_position_no_merge(self):
         """Une seule position ne doit pas être modifiée"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant Développeur,Some description,Paris,2020-01,2020-12
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -455,19 +449,17 @@ Zenika,Consultant Développeur,Some description,Paris,2020-01,2020-12
         # Vérifier qu'elle n'a pas de missions
         self.assertNotIn('missions', data['positions'][0])
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_mission_without_client_pattern(self):
         """Mission sans pattern de client devrait utiliser 'Client' générique"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,2020-01,2020-12
 Zenika,Software Engineer,"Detailed mission description without client pattern",Remote,2020-03,2020-08
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -478,20 +470,18 @@ Zenika,Software Engineer,"Detailed mission description without client pattern",R
         # Le client devrait être "Client" par défaut
         self.assertEqual(mission['client'], 'Client')
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_three_positions_same_company(self):
         """3 positions pour la même entreprise : 1 principale + 2 missions"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,2020-01,2020-12
 Zenika,Developer @ Aircall,"Mission 1",Remote,2020-03,2020-06
 Zenika,Tech Lead @ BNP,"Mission 2",Paris,2020-07,2020-12
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -501,9 +491,6 @@ Zenika,Tech Lead @ BNP,"Mission 2",Paris,2020-07,2020-12
         self.assertEqual(len(data['positions']), 1)
         self.assertEqual(len(data['positions'][0]['missions']), 2)
 
-        # Cleanup
-        import shutil
-        shutil.rmtree(temp_dir)
 
 
 class TestAdvancedDateEdgeCases(unittest.TestCase):
@@ -555,12 +542,13 @@ class TestCompanyNameEdgeCases(unittest.TestCase):
     def test_company_with_multiple_spaces(self):
         """Nom d'entreprise avec espaces multiples"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika  SARL,Consultant,,Paris,Jan 2020,Dec 2020
 Zenika  SARL,Developer @ Client,"Mission",Paris,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -570,18 +558,17 @@ Zenika  SARL,Developer @ Client,"Mission",Paris,Mar 2020,Aug 2020
         self.assertEqual(len(data['positions']), 1)
         self.assertIn('missions', data['positions'][0])
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_company_with_special_chars(self):
         """Nom d'entreprise avec caractères spéciaux"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 L'Oréal S.A.,Consultant,,Paris,Jan 2020,Dec 2020
 L'Oréal S.A.,Developer @ Internal Team,"Mission",Paris,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -590,8 +577,6 @@ L'Oréal S.A.,Developer @ Internal Team,"Mission",Paris,Mar 2020,Aug 2020
         # Devrait fusionner
         self.assertEqual(len(data['positions']), 1)
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_company_name_empty_or_whitespace(self):
         """Nom d'entreprise vide ou whitespace"""
@@ -613,12 +598,13 @@ class TestDescriptionEdgeCases(unittest.TestCase):
     def test_descriptions_equal_length(self):
         """Descriptions de longueur exactement égale"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,Description1,Paris,Jan 2020,Dec 2020
 Zenika,Developer @ Client,Description2,Paris,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -628,18 +614,17 @@ Zenika,Developer @ Client,Description2,Paris,Mar 2020,Aug 2020
         self.assertEqual(len(data['positions']), 1)
         self.assertIn('missions', data['positions'][0])
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_both_descriptions_empty(self):
         """Les deux descriptions sont vides"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,Jan 2020,Dec 2020
 Zenika,Developer @ Client,,Paris,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -648,19 +633,18 @@ Zenika,Developer @ Client,,Paris,Mar 2020,Aug 2020
         # Devrait fusionner (descriptions égales = 0)
         self.assertEqual(len(data['positions']), 1)
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_very_long_description(self):
         """Description très longue (>10000 caractères)"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         long_desc = "A" * 15000  # 15k caractères
         positions_csv = f"""Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,Short,Paris,Jan 2020,Dec 2020
 Zenika,Developer @ Client,"{long_desc}",Paris,Mar 2020,Aug 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -671,8 +655,6 @@ Zenika,Developer @ Client,"{long_desc}",Paris,Mar 2020,Aug 2020
         mission = data['positions'][0]['missions'][0]
         self.assertGreater(len(mission['description']), 10000)
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
 
 class TestMultipleOverlappingPositions(unittest.TestCase):
@@ -681,6 +663,7 @@ class TestMultipleOverlappingPositions(unittest.TestCase):
     def test_five_positions_same_company(self):
         """5 positions pour la même entreprise qui se chevauchent"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Accenture,Senior Consultant,,Paris,Jan 2020,Dec 2022
 Accenture,Dev @ Client1,"Mission 1",Remote,Jan 2020,Jun 2020
@@ -689,7 +672,7 @@ Accenture,Dev @ Client3,"Mission 3",Remote,Jan 2021,Jun 2021
 Accenture,Dev @ Client4,"Mission 4",Remote,Jul 2021,Dec 2022
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -706,19 +689,18 @@ Accenture,Dev @ Client4,"Mission 4",Remote,Jul 2021,Dec 2022
         self.assertIn('Client3', clients)
         self.assertIn('Client4', clients)
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
     def test_cascading_overlaps(self):
         """Chevauchements en cascade - teste le comportement actuel"""
         temp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, temp_dir, ignore_errors=True)
         positions_csv = """Company Name,Title,Description,Location,Started On,Finished On
 Zenika,Consultant,,Paris,Jan 2020,Jun 2020
 Zenika,Dev @ Client1,"Mission 1",Remote,Mar 2020,Sep 2020
 Zenika,Dev @ Client2,"Mission 2",Remote,Jul 2020,Dec 2020
 """
         positions_path = os.path.join(temp_dir, 'Positions.csv')
-        with open(positions_path, 'w') as f:
+        with open(positions_path, 'w', encoding='utf-8') as f:
             f.write(positions_csv)
 
         parser = LinkedInParser([positions_path])
@@ -735,8 +717,6 @@ Zenika,Dev @ Client2,"Mission 2",Remote,Jul 2020,Dec 2020
         self.assertEqual(len(positions_with_missions), 1)
         self.assertEqual(len(positions_with_missions[0]['missions']), 1)
 
-        import shutil
-        shutil.rmtree(temp_dir)
 
 
 class TestClientNameAdvancedPatterns(unittest.TestCase):

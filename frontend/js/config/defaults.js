@@ -21,6 +21,8 @@ export const TEMPLATE_PRESETS = {
 };
 
 export const DEFAULT_CONFIG = {
+    language: 'fr',
+    cv_type: 'standard',
     sections: {
         summary: true,
         experience: true,
