@@ -10,15 +10,13 @@ Ce fichier contient des tests automatisés pour valider le comportement du gén�
 ### Avec pytest (recommandé)
 
 ```bash
-cd backend
-python3 -m pytest test_cv_generator.py -v
+python3 -m pytest tests/business/test_text_sanitization.py -v
 ```
 
 ### Avec unittest
 
 ```bash
-cd backend
-python3 test_cv_generator.py
+python3 -m unittest tests.business.test_text_sanitization -v
 ```
 
 ## 📋 Couverture des tests
@@ -140,5 +138,5 @@ Les tests doivent être exécutés :
 ## 🔗 Fichiers liés
 
 - `cv_generator.py` : Code source du générateur
-- `test_cv_generator.py` : Tests unitaires
+- `tests/business/test_text_sanitization.py` : Tests unitaires
 - `linkedin_parser.py` : Parser des exports LinkedIn

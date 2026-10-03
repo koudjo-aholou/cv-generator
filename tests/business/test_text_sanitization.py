@@ -6,7 +6,18 @@ la normalisation des apostrophes et le formatage des descriptions.
 """
 
 import unittest
+import sys
+import os
+
+# Add backend to path (works under pytest and plain unittest alike)
+backend_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'backend')
+sys.path.insert(0, os.path.abspath(backend_dir))
+
 from cv_generator import CVGenerator
+
+# _format_description emet l'entite XML &#8226; et non le caractere '•' :
+# Helvetica ne sait pas rendre le glyphe directement (cf. commit c05b216).
+BULLET = '&#8226;'
 
 
 class TestEmojiCleaning(unittest.TestCase):
@@ -126,7 +137,7 @@ class TestDescriptionFormatting(unittest.TestCase):
         }
         cv = CVGenerator(data)
         formatted = cv._format_description(cv.data['profile']['summary'])
-        self.assertNotIn('•', formatted)
+        self.assertNotIn(BULLET, formatted)
 
     def test_emojis_create_bullet_list(self):
         """Les emojis doivent créer automatiquement une liste à puces"""
@@ -137,9 +148,9 @@ class TestDescriptionFormatting(unittest.TestCase):
         cv = CVGenerator(data)
         formatted = cv._format_description(cv.data['profile']['summary'])
         # Doit contenir des bullets
-        self.assertIn('•', formatted)
+        self.assertIn(BULLET, formatted)
         # Doit avoir 3 bullets (un par item)
-        bullet_count = formatted.count('•')
+        bullet_count = formatted.count(BULLET)
         self.assertEqual(bullet_count, 3)
 
     def test_native_bullets_preserved(self):
@@ -151,11 +162,11 @@ class TestDescriptionFormatting(unittest.TestCase):
         cv = CVGenerator(data)
         formatted = cv._format_description(cv.data['profile']['summary'])
         # Doit contenir des bullets
-        self.assertIn('•', formatted)
+        self.assertIn(BULLET, formatted)
         # Chaque item doit être sur sa propre ligne avec un bullet
-        self.assertIn('• Item 1', formatted)
-        self.assertIn('• Item 2', formatted)
-        self.assertIn('• Item 3', formatted)
+        self.assertIn(f'{BULLET} Item 1', formatted)
+        self.assertIn(f'{BULLET} Item 2', formatted)
+        self.assertIn(f'{BULLET} Item 3', formatted)
 
     def test_line_break_markers_converted(self):
         """Les marqueurs 'n' doivent être convertis en sauts de ligne"""
@@ -188,9 +199,9 @@ class TestDescriptionFormatting(unittest.TestCase):
         cv = CVGenerator(data)
         formatted = cv._format_description(cv.data['profile']['summary'])
         # Tous doivent être convertis en •
-        self.assertIn('• Item 1', formatted)
-        self.assertIn('• Item 2', formatted)
-        self.assertIn('• Item 3', formatted)
+        self.assertIn(f'{BULLET} Item 1', formatted)
+        self.assertIn(f'{BULLET} Item 2', formatted)
+        self.assertIn(f'{BULLET} Item 3', formatted)
 
 
 class TestComplexScenarios(unittest.TestCase):
@@ -212,8 +223,8 @@ class TestComplexScenarios(unittest.TestCase):
         self.assertIn("l'API", formatted)
 
         # Les emojis doivent créer des bullets
-        self.assertIn('•', formatted)
-        bullet_count = formatted.count('•')
+        self.assertIn(BULLET, formatted)
+        bullet_count = formatted.count(BULLET)
         self.assertEqual(bullet_count, 2)
 
         # Pas de mots cassés
@@ -232,7 +243,7 @@ class TestComplexScenarios(unittest.TestCase):
         formatted = cv._format_description(cv.data['profile']['summary'])
 
         # Tous les items doivent avoir des bullets
-        bullet_count = formatted.count('•')
+        bullet_count = formatted.count(BULLET)
         self.assertGreaterEqual(bullet_count, 4)
 
     def test_real_world_linkedin_description(self):
@@ -253,7 +264,7 @@ class TestComplexScenarios(unittest.TestCase):
         formatted = cv._format_description(cv.data['positions'][0]['description'])
 
         # Doit contenir des bullets
-        self.assertIn('•', formatted)
+        self.assertIn(BULLET, formatted)
 
         # Les apostrophes doivent être préservées
         self.assertIn("d'un", formatted)
@@ -289,8 +300,8 @@ class TestComplexScenarios(unittest.TestCase):
         self.assertNotIn('l\n', desc)
 
         # Dans le formaté, pas de bullets erronés comme "• une" ou "• API"
-        self.assertNotIn('• une étude', formatted)
-        self.assertNotIn('• API', formatted)
+        self.assertNotIn(f'{BULLET} une étude', formatted)
+        self.assertNotIn(f'{BULLET} API', formatted)
 
 
 class TestEdgeCases(unittest.TestCase):
@@ -336,7 +347,7 @@ class TestEdgeCases(unittest.TestCase):
         cv = CVGenerator(data)
         formatted = cv._format_description(cv.data['profile']['summary'])
         # Ne doit pas avoir de bullet car c'est un long paragraphe
-        self.assertNotIn('•', formatted)
+        self.assertNotIn(BULLET, formatted)
 
     def test_special_characters_preserved(self):
         """Les caractères spéciaux français doivent être préservés"""

@@ -984,8 +984,10 @@ class TestIntentionalMarkupPreserved:
 
         out = generator._format_description("R&D <Acme> n Second <item>")
 
-        assert "&amp;" in out and "&lt;Acme&gt;" in out
-        assert "&#8226;" in out and "<br/>" in out
+        assert "&amp;" in out
+        assert "&lt;Acme&gt;" in out
+        assert "&#8226;" in out
+        assert "<br/>" in out
 
     def test_language_names_stay_bold(self, mock_parsed_data):
         """Test that the structural <b> around language names is preserved."""
@@ -995,3 +997,187 @@ class TestIntentionalMarkupPreserved:
         rendered = flowable_text(CVGenerator(data)._build_languages())
 
         assert "<b>Français</b>" in rendered
+
+
+# Every style the builders reference by name. _setup_modern_styles,
+# _setup_classic_styles and _setup_creative_styles must each register all of
+# them: a style added to one template only would raise KeyError at render time
+# under the other two.
+REQUIRED_STYLES = {
+    "Company",
+    "Contact",
+    "DateLocation",
+    "Description",
+    "Headline",
+    "JobTitle",
+    "MissionClient",
+    "MissionDescription",
+    "MissionTitle",
+    "Name",
+    "SectionHeader",
+    "SkillItem",
+    "Summary",
+}
+
+TEMPLATES = ["modern", "classic", "creative"]
+
+
+class TestTemplates:
+    """Cover the three templates.
+
+    'classic' and 'creative' are selectable from the UI radio group but were
+    at 0% coverage — ~330 lines that no test exercised.
+    """
+
+    @pytest.mark.parametrize("template", TEMPLATES + ["inconnu", None])
+    def test_template_registers_every_required_style(self, mock_parsed_data, template):
+        """Test each template (and the fallback) defines all 13 styles."""
+        generator = CVGenerator(mock_parsed_data, config={"template": template})
+
+        missing = REQUIRED_STYLES - set(generator.styles.byName)
+        assert not missing, f"styles manquants pour '{template}': {sorted(missing)}"
+
+    @pytest.mark.parametrize("template", TEMPLATES)
+    def test_template_generates_valid_pdf(self, mock_parsed_data, template):
+        """Test each template produces a valid PDF end to end."""
+        generator = CVGenerator(mock_parsed_data, config={"template": template})
+        pdf_path = generator.generate()
+
+        try:
+            with open(pdf_path, "rb") as f:
+                assert f.read().startswith(b"%PDF")
+        finally:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
+
+    def test_unknown_template_falls_back_to_modern(self, mock_parsed_data):
+        """Test an unrecognized template renders with the modern styles."""
+        modern = CVGenerator(mock_parsed_data, config={"template": "modern"})
+        unknown = CVGenerator(mock_parsed_data, config={"template": "inconnu"})
+
+        for style in sorted(REQUIRED_STYLES):
+            for attr in ("fontName", "fontSize", "alignment", "leading"):
+                assert getattr(unknown.styles[style], attr) == getattr(
+                    modern.styles[style], attr
+                ), f"'{style}.{attr}' diverge du fallback modern"
+
+    @pytest.mark.parametrize("template", TEMPLATES)
+    def test_template_works_with_swiss_and_english(self, mock_parsed_data, template):
+        """Test the templates compose with the language and Swiss options."""
+        generator = CVGenerator(
+            mock_parsed_data,
+            config={"template": template, "language": "en", "cv_type": "swiss"},
+        )
+
+        assert generator.labels["education"] == "Education"
+        assert flowable_text(generator._build_education())
+
+    def test_templates_are_visually_distinct(self, mock_parsed_data):
+        """Test the three templates do not all collapse to the same styling.
+
+        Guards against a refactor silently making every template identical.
+        They share fontName (all Helvetica) and differ through size, alignment
+        and colour instead, so this pins the dimensions that actually vary.
+        """
+        generators = {
+            t: CVGenerator(mock_parsed_data, config={"template": t}) for t in TEMPLATES
+        }
+
+        sizes = {t: g.styles["Name"].fontSize for t, g in generators.items()}
+        assert len(set(sizes.values())) == len(TEMPLATES), f"tailles non distinctes: {sizes}"
+
+        # 'classic' is the centered one, the other two are left-aligned
+        alignments = {t: g.styles["Name"].alignment for t, g in generators.items()}
+        assert alignments["classic"] != alignments["modern"]
+
+        # 'creative' is the one that tints headings with the accent colour
+        colors = {t: str(g.styles["SectionHeader"].textColor) for t, g in generators.items()}
+        assert colors["creative"] != colors["modern"]
+
+
+class TestConsultantMissionsRendering:
+    """Cover the PDF rendering of nested consultant missions.
+
+    test_consultant_missions.py covers the *parsing* that builds the
+    'missions' key; this covers the rendering branch that consumes it,
+    which was the remaining uncovered block of _build_experience.
+    """
+
+    @pytest.fixture
+    def data_with_missions(self, mock_parsed_data):
+        data = mock_parsed_data.copy()
+        data["positions"] = [
+            {
+                "company": "Zenika",
+                "title": "Consultant",
+                "duration": "2020 - 2023",
+                "missions": [
+                    {
+                        "client": "Aircall",
+                        "title": "Software Engineer",
+                        "duration": "2020-03 - 2020-08",
+                        "location": "Remote",
+                        "description": "Backend n API design",
+                    },
+                    {"client": "Orange", "title": "Tech Lead"},
+                ],
+            }
+        ]
+        return data
+
+    def test_missions_are_rendered(self, data_with_missions):
+        """Test each mission's client, title, dates and description appear."""
+        rendered = flowable_text(CVGenerator(data_with_missions)._build_experience())
+
+        assert "Mission chez Aircall" in rendered
+        assert "Mission chez Orange" in rendered
+        assert "Software Engineer" in rendered
+        assert "2020-03 - 2020-08 | Remote" in rendered
+
+    def test_mission_description_is_formatted(self, data_with_missions):
+        """Test mission descriptions go through the bullet formatting."""
+        rendered = flowable_text(CVGenerator(data_with_missions)._build_experience())
+
+        assert "&#8226;" in rendered
+
+    def test_mission_without_client_uses_fallback(self, mock_parsed_data):
+        """Test a mission missing its client still renders."""
+        data = mock_parsed_data.copy()
+        data["positions"] = [{"company": "X", "title": "Y", "missions": [{}]}]
+
+        rendered = flowable_text(CVGenerator(data)._build_experience())
+
+        assert "Mission chez Client" in rendered
+
+    def test_hostile_text_in_mission_is_escaped(self, mock_parsed_data):
+        """Regression: a '<' in a mission client used to abort the PDF."""
+        data = mock_parsed_data.copy()
+        data["positions"] = [
+            {
+                "company": "X",
+                "title": "Y",
+                "missions": [{"client": "A <b>A", "title": "T & T"}],
+            }
+        ]
+
+        rendered = flowable_text(CVGenerator(data)._build_experience())
+
+        assert "&lt;b&gt;" in rendered
+        assert "&amp;" in rendered
+
+    def test_position_without_missions_is_unaffected(self, mock_parsed_data):
+        """Test the ordinary (non-consultant) path renders no mission header."""
+        rendered = flowable_text(CVGenerator(mock_parsed_data)._build_experience())
+
+        assert "Mission chez" not in rendered
+
+    def test_missions_pdf_end_to_end(self, data_with_missions):
+        """Test a CV carrying missions generates a valid PDF."""
+        pdf_path = CVGenerator(data_with_missions).generate()
+
+        try:
+            with open(pdf_path, "rb") as f:
+                assert f.read().startswith(b"%PDF")
+        finally:
+            if os.path.exists(pdf_path):
+                os.remove(pdf_path)
