@@ -563,3 +563,82 @@ def test_generate_pdf_with_hostile_xml_in_profile(client, sample_linkedin_data):
 
 if __name__ == '__main__':
     pytest.main([__file__, '-v'])
+
+
+# --- CORS ---------------------------------------------------------------
+
+def _minimal_payload():
+    return {
+        'profile': {'first_name': 'A', 'last_name': 'B'},
+        'positions': [], 'education': [], 'skills': [],
+        'languages': [], 'certifications': []
+    }
+
+
+def test_cors_rejects_null_origin_by_default(client):
+    """Regression: 'null' is the origin of any sandboxed iframe, so allowing it
+    made the local API reachable from any website."""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': 'null'}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') is None
+
+
+@pytest.mark.parametrize('origin', [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+])
+def test_cors_allows_localhost_on_any_port(client, origin):
+    """Test that the legitimate local frontend is still allowed"""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': origin}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') == origin
+
+
+def test_cors_rejects_arbitrary_remote_origin(client):
+    """Test that an unrelated website gets no CORS header"""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': 'https://evil.example'}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') is None
+
+
+def test_cors_null_origin_can_be_opted_in(monkeypatch):
+    """Test that ALLOW_FILE_ORIGIN=true re-enables file:// access.
+
+    The CORS config is built at import time, so the module is reloaded with
+    the variable set rather than mutated in place.
+    """
+    import importlib
+    import app as app_module
+
+    monkeypatch.setenv('ALLOW_FILE_ORIGIN', 'true')
+    reloaded = importlib.reload(app_module)
+    try:
+        reloaded.app.config['TESTING'] = True
+        with reloaded.app.test_client() as opted_in_client:
+            response = opted_in_client.post(
+                '/api/generate-pdf',
+                data=json.dumps(_minimal_payload()),
+                content_type='application/json',
+                headers={'Origin': 'null'}
+            )
+        assert response.headers.get('Access-Control-Allow-Origin') == 'null'
+    finally:
+        # Restore the default config for the rest of the suite
+        monkeypatch.delenv('ALLOW_FILE_ORIGIN')
+        importlib.reload(app_module)

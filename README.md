@@ -32,9 +32,21 @@ Cette application a été durcie contre les vulnérabilités courantes :
 - ✅ **Protection Path Traversal** - Noms de fichiers sécurisés avec UUID
 - ✅ **Validation des Uploads** - Taille et type de fichier vérifiés
 - ✅ **Debug Mode Désactivé** - Par défaut en mode production
-- ✅ **CORS Restreint** - Accès localhost uniquement
+- ✅ **CORS Restreint** - localhost uniquement ; l'origine `null` est refusée par défaut
+- ✅ **CSP stricte** - Aucun script ni style en ligne autorisé
+- ✅ **Échappement systématique** - Les données utilisateur sont échappées avant tout rendu HTML et PDF
+- ✅ **PDF généré en mémoire** - Le CV n'est jamais écrit sur le disque du serveur
 - ✅ **Nettoyage Garanti** - Fichiers temporaires toujours supprimés
 - ✅ **Logging Sécurisé** - Pas de données sensibles dans les logs clients
+
+### Variables d'environnement
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `FLASK_DEBUG` | `False` | Mode debug Flask |
+| `FLASK_HOST` | `127.0.0.1` | Interface d'écoute |
+| `FLASK_PORT` | `5000` | Port d'écoute |
+| `ALLOW_FILE_ORIGIN` | `False` | Autorise l'origine `null`, nécessaire seulement pour ouvrir `index.html` directement depuis le disque en `file://`. À laisser désactivé : cette origine est aussi celle de n'importe quelle iframe sandboxée, ce qui rendrait l'API joignable depuis le web. |
 
 **⚠️ Important** : Cette application est conçue pour un **usage local uniquement**. Ne l'exposez pas sur internet sans protections supplémentaires (reverse proxy, HTTPS, authentification).
 

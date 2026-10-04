@@ -3,6 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Content-Security-Policy. La page ne charge aucune ressource externe et
+      n'a aucun script en ligne, d'ou l'absence de 'unsafe-inline' sur les
+      scripts : c'est la protection qui empeche l'execution de code injecte.
+      Les trois tolerances sont justifiees par le code :
+        - img-src data:   apercu photo construit par FileReader.readAsDataURL
+        - frame-src blob: apercu PDF via URL.createObjectURL dans une iframe
+        - connect-src     la page est servie sur :8080, l'API ecoute sur :5000
+      Le hash couvre les 12 attributs de style du projet, qui portent tous
+      exactement la meme declaration, et n'autorise aucun autre style inline.
+      frame-ancestors est volontairement absente : elle est ignoree en <meta>
+      et n'existe qu'en en-tete HTTP.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-hashes' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog=';
+        img-src 'self' data:;
+        frame-src blob:;
+        connect-src 'self' http://localhost:5000 http://127.0.0.1:5000;
+        object-src 'none';
+        base-uri 'none';
+        form-action 'none'">
     <title>LinkedIn CV Generator</title>
     <link rel="stylesheet" href="style.css">
 </head>

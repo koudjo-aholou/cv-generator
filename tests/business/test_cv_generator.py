@@ -71,43 +71,33 @@ class TestPDFGeneration:
     def test_generate_pdf_success(self, mock_parsed_data):
         """Test that PDF is generated successfully."""
         generator = CVGenerator(mock_parsed_data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # PDF file should be created
-        assert os.path.exists(pdf_path)
-        assert pdf_path.endswith('.pdf')
+        assert pdf.getbuffer().nbytes > 0
+        assert pdf.getvalue().startswith(b'%PDF')
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_generated_pdf_is_valid(self, mock_parsed_data):
         """Test that generated PDF is valid."""
         generator = CVGenerator(mock_parsed_data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Check file is not empty and has PDF magic number
-        with open(pdf_path, 'rb') as f:
-            content = f.read()
-            assert len(content) > 0
-            assert content.startswith(b'%PDF')
+        content = pdf.getvalue()
+        assert len(content) > 0
+        assert content.startswith(b'%PDF')
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_pdf_size_reasonable(self, mock_parsed_data):
         """Test that generated PDF has reasonable size."""
         generator = CVGenerator(mock_parsed_data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # PDF should be between 1KB and 10MB
-        size = os.path.getsize(pdf_path)
+        size = pdf.getbuffer().nbytes
         assert 1024 < size < 10 * 1024 * 1024
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_generate_with_minimal_data(self):
         """Test PDF generation with minimal data."""
@@ -124,13 +114,10 @@ class TestPDFGeneration:
         }
 
         generator = CVGenerator(minimal_data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
 
 class TestPhotoHandling:
@@ -165,26 +152,20 @@ class TestPhotoHandling:
         data['photo'] = f"data:image/png;base64,{noisy_base64}"
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Should generate successfully
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
         # PDF with photo should be larger than without
-        size_with_photo = os.path.getsize(pdf_path)
+        size_with_photo = pdf.getbuffer().nbytes
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
         # Generate without photo
         generator_no_photo = CVGenerator(mock_parsed_data)
-        pdf_path_no_photo = generator_no_photo.generate()
-        size_without_photo = os.path.getsize(pdf_path_no_photo)
+        pdf_no_photo = generator_no_photo.generate()
+        size_without_photo = pdf_no_photo.getbuffer().nbytes
 
-        # Clean up
-        if os.path.exists(pdf_path_no_photo):
-            os.remove(pdf_path_no_photo)
 
         # Photo should add some size
         assert size_with_photo >= size_without_photo
@@ -196,13 +177,10 @@ class TestPhotoHandling:
         data.pop('photo', None)
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_photo_error_handling(self, mock_parsed_data):
         """Test that invalid photo data doesn't crash generation."""
@@ -211,13 +189,10 @@ class TestPhotoHandling:
 
         generator = CVGenerator(data)
         # Should not crash, might generate without photo
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_photo_dimensions_fixed(self, mock_parsed_data, mock_base64_image):
         """Test that photo is resized to fixed dimensions."""
@@ -459,14 +434,11 @@ class TestPagination:
         }
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Should generate without errors
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
 
 class TestStyling:
@@ -506,13 +478,10 @@ class TestErrorHandling:
 
         # Should handle missing profile
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_invalid_data_types(self):
         """Test handling of invalid data types."""
@@ -528,10 +497,8 @@ class TestErrorHandling:
         # Should handle gracefully or raise appropriate error
         try:
             generator = CVGenerator(data)
-            pdf_path = generator.generate()
+            pdf = generator.generate()
 
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
         except (TypeError, AttributeError):
             # Expected for invalid data
             pass
@@ -559,14 +526,11 @@ class TestErrorHandling:
         }
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Should handle special characters without crashing
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
 
 class TestPageSize:
@@ -578,13 +542,10 @@ class TestPageSize:
 
         # Should use A4
         # Check if pagesize is set in doc or styles
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
 
 class TestLanguageSupport:
@@ -691,15 +652,9 @@ class TestLanguageSupport:
     def test_english_pdf_generation_end_to_end(self, mock_parsed_data):
         """Test that an English CV generates a valid PDF end to end."""
         generator = CVGenerator(mock_parsed_data, config={"language": "en"})
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        try:
-            assert os.path.exists(pdf_path)
-            with open(pdf_path, "rb") as f:
-                assert f.read().startswith(b"%PDF")
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+        assert pdf.getvalue().startswith(b"%PDF")
 
 
 class TestSwissCv:
@@ -845,15 +800,9 @@ class TestSwissCv:
         generator = CVGenerator(
             swiss_profile_data, config={"cv_type": "swiss", "language": "en"}
         )
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        try:
-            assert os.path.exists(pdf_path)
-            with open(pdf_path, "rb") as f:
-                assert f.read().startswith(b"%PDF")
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+        assert pdf.getvalue().startswith(b"%PDF")
 
 
 # Payloads that previously aborted PDF generation with
@@ -933,14 +882,9 @@ class TestXmlEscaping:
         }
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        try:
-            with open(pdf_path, "rb") as f:
-                assert f.read().startswith(b"%PDF")
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+        assert pdf.getvalue().startswith(b"%PDF")
 
     def test_formatting_injection_is_neutralized(self, mock_parsed_data):
         """Test that '<b>' in user data renders literally instead of as bold."""
@@ -1041,14 +985,9 @@ class TestTemplates:
     def test_template_generates_valid_pdf(self, mock_parsed_data, template):
         """Test each template produces a valid PDF end to end."""
         generator = CVGenerator(mock_parsed_data, config={"template": template})
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
-        try:
-            with open(pdf_path, "rb") as f:
-                assert f.read().startswith(b"%PDF")
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+        assert pdf.getvalue().startswith(b"%PDF")
 
     def test_unknown_template_falls_back_to_modern(self, mock_parsed_data):
         """Test an unrecognized template renders with the modern styles."""
@@ -1173,11 +1112,6 @@ class TestConsultantMissionsRendering:
 
     def test_missions_pdf_end_to_end(self, data_with_missions):
         """Test a CV carrying missions generates a valid PDF."""
-        pdf_path = CVGenerator(data_with_missions).generate()
+        pdf = CVGenerator(data_with_missions).generate()
 
-        try:
-            with open(pdf_path, "rb") as f:
-                assert f.read().startswith(b"%PDF")
-        finally:
-            if os.path.exists(pdf_path):
-                os.remove(pdf_path)
+        assert pdf.getvalue().startswith(b"%PDF")
