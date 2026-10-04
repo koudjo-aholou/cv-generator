@@ -2,8 +2,6 @@
  * Centralized state management store
  */
 
-import { eventBus } from '../dom/events.js';
-
 class Store {
     constructor(initialState = {}) {
         this.state = { ...initialState };
@@ -25,13 +23,6 @@ class Store {
                     callback(this.state[key], oldState[key]);
                 });
             }
-        });
-
-        // Emit global state change event
-        eventBus.emit('state:change', {
-            oldState,
-            newState: this.state,
-            updates
         });
     }
 
@@ -58,12 +49,6 @@ class Store {
         if (index > -1) {
             callbacks.splice(index, 1);
         }
-    }
-
-    reset(initialState = {}) {
-        this.state = { ...initialState };
-        this.observers.clear();
-        eventBus.emit('state:reset', this.state);
     }
 }
 

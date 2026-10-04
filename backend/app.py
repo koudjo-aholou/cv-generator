@@ -16,16 +16,26 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# CORS Configuration - Allow localhost on any port and file:// protocol (origin: null)
+# CORS Configuration - localhost on any port.
+#
+# The "null" origin is NOT allowed by default. It was there for direct
+# file:// access, but "null" is also the origin of any opaque-origin
+# document, which any website can produce with a sandboxed iframe — that
+# made the local API reachable from the web. Set ALLOW_FILE_ORIGIN=true to
+# opt back in when opening index.html straight from disk.
+CORS_ORIGINS = [
+    "http://localhost:*",
+    "http://localhost:8080",
+    "http://127.0.0.1:*",
+    "http://127.0.0.1:8080",
+]
+
+if os.getenv('ALLOW_FILE_ORIGIN', 'False').lower() == 'true':
+    CORS_ORIGINS.append("null")
+
 CORS(app, resources={
     r"/api/*": {
-        "origins": [
-            "http://localhost:*",
-            "http://localhost:8080",
-            "http://127.0.0.1:*",
-            "http://127.0.0.1:8080",
-            "null"  # For direct file:// access
-        ],
+        "origins": CORS_ORIGINS,
         "methods": ["GET", "POST"],
         "allow_headers": ["Content-Type"],
         "supports_credentials": False
@@ -196,19 +206,18 @@ def generate_pdf():
 
         # Generate PDF with config
         generator = CVGenerator(data, config=config)
-        pdf_path = generator.generate()
+        pdf_buffer = generator.generate()
 
-        logger.info(f"PDF generated successfully: {pdf_path}")
+        logger.info("PDF generated successfully (in memory)")
 
-        # Send file (PDF is kept in cv/ folder)
-        response = send_file(
-            pdf_path,
+        # The PDF never touches the disk: the UI promises that nothing is
+        # saved on a server, so it is streamed straight from memory.
+        return send_file(
+            pdf_buffer,
             mimetype='application/pdf',
             as_attachment=True,
-            download_name='cv.pdf'
+            download_name=generator.suggested_filename()
         )
-
-        return response
 
     except Exception as e:
         logger.error(f"Error generating PDF: {e}", exc_info=True)

@@ -3,6 +3,7 @@
  * Usage: <languages-editor></languages-editor>
  */
 
+import { escapeHtml } from '../../core/utils/formatters.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import * as languagesBusiness from '../../business/cv/languages.js';
 
@@ -76,11 +77,11 @@ export class LanguagesEditor extends HTMLElement {
                 <div class="editor-row">
                     <div class="form-group">
                         <label>Langue</label>
-                        <input type="text" data-index="${index}" data-field="name" value="${lang.name || ''}">
+                        <input type="text" data-index="${index}" data-field="name" value="${escapeHtml(lang.name || '')}">
                     </div>
                     <div class="form-group">
                         <label>Niveau</label>
-                        <input type="text" data-index="${index}" data-field="proficiency" value="${lang.proficiency || ''}" placeholder="Ex: Courant, Natif, B2...">
+                        <input type="text" data-index="${index}" data-field="proficiency" value="${escapeHtml(lang.proficiency || '')}" placeholder="Ex: Courant, Natif, B2...">
                     </div>
                 </div>
             `;

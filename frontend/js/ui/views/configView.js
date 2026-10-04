@@ -8,7 +8,27 @@ import { applyTemplateColors } from '../../business/template/presets.js';
 import { eventBus } from '../../core/dom/events.js';
 import { checkSectionHasData } from '../../business/cv/sections.js';
 import { SectionOrderEditor } from '../editors/section-order-editor.js';
-import { SECTION_NAMES_BY_LANG } from '../../config/constants.js';
+import {
+    SECTION_NAMES_BY_LANG,
+    CV_SECTIONS,
+    LABEL_KEYS
+} from '../../config/constants.js';
+import { DEFAULT_CONFIG } from '../../config/defaults.js';
+
+// Free-text inputs of step 2 that hold personal data. They are read straight
+// from the DOM when the PDF is generated, so they must be cleared on reset:
+// otherwise the previous person's details end up in the next CV.
+const PERSONAL_INPUT_IDS = [
+    'profile-headline',
+    'profile-summary',
+    'contact-email',
+    'contact-phone',
+    'contact-address',
+    'contact-birth-date',
+    'contact-nationality',
+    'contact-civil-status',
+    'contact-permit'
+];
 
 export class ConfigView {
     constructor() {
@@ -19,7 +39,6 @@ export class ConfigView {
         this.setupSectionToggles();
         this.setupTemplateSelection();
         this.setupColorPickers();
-        this.setupContactFields();
         this.setupLabelInputs();
         this.setupLanguageAndCvType();
         this.sectionOrderEditor.init();
@@ -27,10 +46,71 @@ export class ConfigView {
         eventBus.on('data:parsed', () => this.populateFromData());
     }
 
+    /**
+     * Rewrite every step-2 control from the given config and clear the
+     * personal inputs. Called on reset so the form can never disagree with
+     * the state it is supposed to represent.
+     */
+    syncFromConfig(config = cvStateService.getConfig()) {
+        // Fill in anything the caller left out: this method must always leave
+        // the form in a complete, coherent state. Throwing halfway through
+        // would be worse than not resetting, since the personal inputs are
+        // cleared first and the selects would keep the previous values.
+        const safe = { ...DEFAULT_CONFIG, ...config };
+        safe.sections = { ...DEFAULT_CONFIG.sections, ...(config.sections || {}) };
+        safe.colors = { ...DEFAULT_CONFIG.colors, ...(config.colors || {}) };
+        config = safe;
+
+        PERSONAL_INPUT_IDS.forEach((id) => {
+            const input = $(id);
+            if (input) input.value = '';
+        });
+
+        const languageSelect = $('cv-language');
+        if (languageSelect) languageSelect.value = config.language;
+
+        const cvTypeSelect = $('cv-type');
+        if (cvTypeSelect) cvTypeSelect.value = config.cv_type;
+
+        this.toggleSwissSection(config.cv_type);
+
+        // Labels fall back to the defaults of the configured language
+        const defaults = SECTION_NAMES_BY_LANG[config.language] || SECTION_NAMES_BY_LANG.fr;
+        LABEL_KEYS.forEach((key) => {
+            const input = $(`label-${key}`);
+            if (input) input.value = (config.labels && config.labels[key]) || defaults[key];
+        });
+
+        CV_SECTIONS.forEach((section) => {
+            const toggle = $(`toggle-${section}`);
+            if (toggle) {
+                toggle.checked = config.sections[section] !== false;
+                toggle.disabled = false;
+                if (toggle.parentElement) toggle.parentElement.style.opacity = '';
+            }
+        });
+
+        const templateRadio = document.querySelector(
+            `input[name="template"][value="${config.template}"]`
+        );
+        if (templateRadio) templateRadio.checked = true;
+
+        // Colours are driven by the template, so they must follow it
+        this.updateColorInputs(config.colors);
+
+        this.sectionOrderEditor.render();
+    }
+
+    toggleSwissSection(cvType) {
+        const swissSection = $('swiss-fields-section');
+        if (swissSection) {
+            swissSection.style.display = cvType === 'swiss' ? '' : 'none';
+        }
+    }
+
     setupLanguageAndCvType() {
         const languageSelect = $('cv-language');
         const cvTypeSelect = $('cv-type');
-        const swissSection = $('swiss-fields-section');
 
         if (languageSelect) {
             languageSelect.addEventListener('change', (e) => {
@@ -42,8 +122,8 @@ export class ConfigView {
                 // language's defaults, overwriting any customization —
                 // keeping French titles on an English CV is never wanted.
                 const defaults = SECTION_NAMES_BY_LANG[language];
-                Object.keys(defaults).forEach((key) => {
-                    const input = document.getElementById(`label-${key}`);
+                LABEL_KEYS.forEach((key) => {
+                    const input = $(`label-${key}`);
                     if (input) input.value = defaults[key];
                 });
                 config.labels = { ...defaults };
@@ -60,16 +140,14 @@ export class ConfigView {
                 config.cv_type = cvType;
                 cvStateService.setConfig(config);
 
-                if (swissSection) {
-                    swissSection.style.display = cvType === 'swiss' ? '' : 'none';
-                }
+                this.toggleSwissSection(cvType);
             });
         }
     }
 
     setupLabelInputs() {
-        ['about', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(key => {
-            const input = document.getElementById(`label-${key}`);
+        LABEL_KEYS.forEach(key => {
+            const input = $(`label-${key}`);
             if (!input) return;
             input.addEventListener('input', () => {
                 const config = cvStateService.getConfig();
@@ -81,7 +159,7 @@ export class ConfigView {
     }
 
     setupSectionToggles() {
-        ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'].forEach(section => {
+        CV_SECTIONS.forEach(section => {
             const toggle = $(`toggle-${section}`);
             if (toggle) {
                 toggle.addEventListener('change', (e) => {
@@ -137,14 +215,6 @@ export class ConfigView {
         }
     }
 
-    setupContactFields() {
-        const email = $('contact-email');
-        const phone = $('contact-phone');
-        const address = $('contact-address');
-
-        // Contact fields are read from inputs when generating PDF
-    }
-
     populateFromData() {
         const parsedData = cvStateService.getParsedData();
         const config = cvStateService.getConfig();
@@ -165,15 +235,17 @@ export class ConfigView {
         }
 
         // Update section toggles
-        Object.keys(config.sections).forEach(section => {
+        CV_SECTIONS.forEach(section => {
             const toggle = $(`toggle-${section}`);
-            if (toggle) {
-                toggle.checked = config.sections[section];
-                const hasData = checkSectionHasData(section, parsedData);
-                toggle.disabled = !hasData;
-                if (!hasData) {
-                    toggle.parentElement.style.opacity = '0.5';
-                }
+            if (!toggle) return;
+
+            toggle.checked = config.sections[section] !== false;
+            const hasData = checkSectionHasData(section, parsedData);
+            toggle.disabled = !hasData;
+            // Reset the dimming too, otherwise a section that was empty on a
+            // previous import stays greyed out once it does have data
+            if (toggle.parentElement) {
+                toggle.parentElement.style.opacity = hasData ? '' : '0.5';
             }
         });
     }

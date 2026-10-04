@@ -11,7 +11,6 @@ class StepperService {
         if (stepNumber < 1 || stepNumber > TOTAL_STEPS) return;
 
         cvStateService.setCurrentStep(stepNumber);
-        eventBus.emit('stepper:change', stepNumber);
 
         // Update DOM: hide all steps and show target step
         document.querySelectorAll('.step-content').forEach(step => {

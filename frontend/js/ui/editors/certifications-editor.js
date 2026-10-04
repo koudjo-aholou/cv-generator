@@ -3,6 +3,7 @@
  * Usage: <certifications-editor></certifications-editor>
  */
 
+import { escapeHtml } from '../../core/utils/formatters.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import * as certificationsBusiness from '../../business/cv/certifications.js';
 
@@ -72,7 +73,7 @@ export class CertificationsEditor extends HTMLElement {
             item.innerHTML = `
                 <div class="editor-item-header">
                     <span class="editor-item-title">
-                        ${cert.name || 'Certification'}
+                        ${escapeHtml(cert.name || 'Certification')}
                     </span>
                     <div class="editor-header-actions">
                         <button class="editor-toggle-btn" data-index="${index}">Modifier</button>
@@ -82,25 +83,25 @@ export class CertificationsEditor extends HTMLElement {
                 <div class="editor-fields" data-index="${index}" style="display: none;">
                     <div class="form-group">
                         <label>Nom de la certification</label>
-                        <input type="text" data-field="name" value="${cert.name || ''}">
+                        <input type="text" data-field="name" value="${escapeHtml(cert.name || '')}">
                     </div>
                     <div class="form-group">
                         <label>Organisme</label>
-                        <input type="text" data-field="authority" value="${cert.authority || ''}">
+                        <input type="text" data-field="authority" value="${escapeHtml(cert.authority || '')}">
                     </div>
                     <div class="editor-row">
                         <div class="form-group">
                             <label>Date d'obtention</label>
-                            <input type="text" data-field="start_date" value="${cert.start_date || ''}" placeholder="Ex: Jan 2021">
+                            <input type="text" data-field="start_date" value="${escapeHtml(cert.start_date || '')}" placeholder="Ex: Jan 2021">
                         </div>
                         <div class="form-group">
                             <label>Date d'expiration</label>
-                            <input type="text" data-field="end_date" value="${cert.end_date || ''}" placeholder="Ex: Jan 2024 (optionnel)">
+                            <input type="text" data-field="end_date" value="${escapeHtml(cert.end_date || '')}" placeholder="Ex: Jan 2024 (optionnel)">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>URL (optionnel)</label>
-                        <input type="url" data-field="url" value="${cert.url || ''}" placeholder="https://...">
+                        <input type="url" data-field="url" value="${escapeHtml(cert.url || '')}" placeholder="https://...">
                     </div>
                 </div>
             `;

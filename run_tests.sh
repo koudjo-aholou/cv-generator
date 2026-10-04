@@ -79,6 +79,16 @@ case "$OPTION" in
         ;;
 esac
 
+# Frontend DOM tests (jsdom + node --test)
+if [ "$OPTION" != "quick" ]; then
+    print_section "Frontend DOM Tests"
+    if [ -d node_modules ]; then
+        npm test || FAILED_TESTS+=("Frontend DOM")
+    else
+        echo -e "${YELLOW}⚠️  node_modules absent — lancez 'npm install' pour les tests DOM${NC}"
+    fi
+fi
+
 # Summary
 echo ""
 echo -e "${BLUE}========================================${NC}"
@@ -90,7 +100,7 @@ if [ ${#FAILED_TESTS[@]} -eq 0 ]; then
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
     echo "  1. Review coverage report: firefox htmlcov/index.html"
-    echo "  2. Test frontend: firefox tests/test_frontend.html"
+    echo "  2. Tests navigateur: npx playwright test"
     echo "  3. Commit your changes"
     exit 0
 else

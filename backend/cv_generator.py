@@ -16,8 +16,6 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
 from reportlab.lib import colors
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-import os
-import tempfile
 import base64
 import re
 from io import BytesIO
@@ -850,31 +848,37 @@ class CVGenerator:
             )
         )
 
-    def generate(self):
-        """Generate the PDF CV"""
-        # Create CV folder if it doesn't exist
-        cv_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cv")
-        os.makedirs(cv_folder, exist_ok=True)
+    def suggested_filename(self):
+        """Build a CV_LASTNAME_Firstname_timestamp.pdf name from the profile.
 
-        # Extract name from profile for filename
+        Used as the download name only — nothing is written to disk.
+        """
         profile = self.data.get("profile", {})
         last_name = profile.get("last_name", "Inconnu").strip()
         first_name = profile.get("first_name", "").strip()
 
-        # Clean names for filename (remove special characters)
-        import re
-
+        # Strip anything that is not a word character, space or hyphen: this
+        # also removes path separators and dots, so the result can never walk
+        # out of a directory even if it is later used as a path.
         last_name_clean = re.sub(r"[^\w\s-]", "", last_name).replace(" ", "_")
         first_name_clean = re.sub(r"[^\w\s-]", "", first_name).replace(" ", "_")
 
-        # Generate filename with name and timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        filename = f"CV_{last_name_clean.upper()}_{first_name_clean.capitalize()}_{timestamp}.pdf"
-        pdf_path = os.path.join(cv_folder, filename)
+        return f"CV_{last_name_clean.upper()}_{first_name_clean.capitalize()}_{timestamp}.pdf"
+
+    def generate(self):
+        """Build the PDF entirely in memory and return it as a BytesIO.
+
+        Nothing is written to disk: the UI promises that no information is
+        saved on a server, and writing the CV to a cv/ folder that was never
+        purged contradicted that. Keeping the PDF in memory makes the promise
+        true by construction rather than by a cleanup step one can forget.
+        """
+        buffer = BytesIO()
 
         # Create PDF with better margins
         doc = SimpleDocTemplate(
-            pdf_path,
+            buffer,
             pagesize=A4,
             rightMargin=20 * mm,
             leftMargin=20 * mm,
@@ -940,7 +944,8 @@ class CVGenerator:
         # Build PDF
         doc.build(story)
 
-        return pdf_path
+        buffer.seek(0)
+        return buffer
 
     def _create_section_header(self, title):
         """Create a section header with horizontal line"""

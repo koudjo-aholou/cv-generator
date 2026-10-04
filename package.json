@@ -1,0 +1,19 @@
+{
+  "name": "cv-generator",
+  "version": "1.0.0",
+  "description": "Application web simple pour générer un CV professionnel à partir de votre export LinkedIn.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/frontend/*.test.mjs\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/koudjo-aholou/cv-generator.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "jsdom": "^29.1.1"
+  }
+}

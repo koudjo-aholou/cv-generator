@@ -3,6 +3,7 @@
  * Usage: <education-editor></education-editor>
  */
 
+import { escapeHtml } from '../../core/utils/formatters.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import * as educationBusiness from '../../business/cv/education.js';
 
@@ -79,7 +80,7 @@ export class EducationEditor extends HTMLElement {
             item.innerHTML = `
                 <div class="editor-item-header">
                     <span class="editor-item-title">
-                        ${edu.degree || 'Diplôme'} - ${edu.school || 'École'}
+                        ${escapeHtml(edu.degree || 'Diplôme')} - ${escapeHtml(edu.school || 'École')}
                     </span>
                     <div class="editor-header-actions">
                         <button class="editor-toggle-btn" data-index="${index}">Modifier</button>
@@ -90,25 +91,25 @@ export class EducationEditor extends HTMLElement {
                     <div class="editor-row">
                         <div class="form-group">
                             <label>Diplôme</label>
-                            <input type="text" data-field="degree" value="${edu.degree || ''}">
+                            <input type="text" data-field="degree" value="${escapeHtml(edu.degree || '')}">
                         </div>
                         <div class="form-group">
                             <label>École / Université</label>
-                            <input type="text" data-field="school" value="${edu.school || ''}">
+                            <input type="text" data-field="school" value="${escapeHtml(edu.school || '')}">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Domaine d'études</label>
-                        <input type="text" data-field="field_of_study" value="${edu.field_of_study || ''}">
+                        <input type="text" data-field="field_of_study" value="${escapeHtml(edu.field_of_study || '')}">
                     </div>
                     <div class="editor-row">
                         <div class="form-group">
                             <label>Date de début</label>
-                            <input type="text" data-field="start_date" value="${edu.start_date || ''}" placeholder="Ex: 2015">
+                            <input type="text" data-field="start_date" value="${escapeHtml(edu.start_date || '')}" placeholder="Ex: 2015">
                         </div>
                         <div class="form-group">
                             <label>Date de fin</label>
-                            <input type="text" data-field="end_date" value="${edu.end_date || ''}" placeholder="Ex: 2019">
+                            <input type="text" data-field="end_date" value="${escapeHtml(edu.end_date || '')}" placeholder="Ex: 2019">
                         </div>
                     </div>
                 </div>
@@ -129,7 +130,7 @@ export class EducationEditor extends HTMLElement {
             item.innerHTML = `
                 <input type="checkbox" data-visibility-index="${index}"
                        ${this.visibleIndices.includes(index) ? 'checked' : ''}>
-                <span>${edu.degree || 'Diplôme'} - ${edu.school || 'École inconnue'}</span>
+                <span>${escapeHtml(edu.degree || 'Diplôme')} - ${escapeHtml(edu.school || 'École inconnue')}</span>
             `;
             toggles.appendChild(item);
         });

@@ -2,6 +2,8 @@
  * Default configurations
  */
 
+import { CV_SECTIONS } from './constants.js';
+
 export const TEMPLATE_PRESETS = {
     modern: {
         primary: '#3498db',
@@ -23,15 +25,8 @@ export const TEMPLATE_PRESETS = {
 export const DEFAULT_CONFIG = {
     language: 'fr',
     cv_type: 'standard',
-    sections: {
-        summary: true,
-        experience: true,
-        education: true,
-        skills: true,
-        languages: true,
-        certifications: true
-    },
-    section_order: ['summary', 'experience', 'education', 'skills', 'languages', 'certifications'],
+    sections: Object.fromEntries(CV_SECTIONS.map((section) => [section, true])),
+    section_order: [...CV_SECTIONS],
     experience_visible: null,
     education_visible: null,
     skills_selected: null,

@@ -39,3 +39,22 @@ export const slugify = (str) => {
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
 };
+
+/**
+ * Escape user text before interpolating it into an innerHTML template.
+ *
+ * The editors build their markup as template strings, so an unescaped value
+ * corrupts the DOM: a double quote inside value="${...}" closes the attribute
+ * early and the rest of the field is silently lost, and a '<' is swallowed as
+ * a tag. Escapes the five characters that matter in both text and attribute
+ * contexts, so a single helper is safe everywhere.
+ */
+export const escapeHtml = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};

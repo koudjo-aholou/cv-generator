@@ -155,17 +155,20 @@ eventBus.on('data:parsed', (data) => {
 
 ## Événements principaux
 
-- `files:changed`: Fichiers modifiés
-- `photo:uploaded`: Photo uploadée
-- `photo:removed`: Photo supprimée
-- `data:parsed`: Données parsées avec succès
-- `stepper:change`: Changement d'étape
-- `stepper:beforeNext`: Avant passage à l'étape suivante
-- `preview:generated`: Aperçu PDF généré
-- `preview:error`: Erreur génération aperçu
-- `pdf:downloaded`: PDF téléchargé
-- `state:change`: État global modifié
-- `state:reset`: État réinitialisé
+Chaque événement listé ici est émis **et** consommé ; les émissions sans
+auditeur ont été retirées.
+
+Via l'`eventBus` :
+
+- `data:parsed` : données parsées avec succès
+- `config:language-changed` : langue du CV modifiée
+- `preview:generated` : aperçu PDF généré
+- `preview:error` : erreur de génération de l'aperçu
+- `pdf:downloaded` : PDF téléchargé
+
+Via le DOM :
+
+- `data-parsed` : émis sur `document`, écouté par les éditeurs de sections
 
 ## Avantages de cette architecture
 

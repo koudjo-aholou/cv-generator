@@ -6,10 +6,7 @@ import { $ } from '../../core/dom/elements.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import { moveSectionUp, moveSectionDown, reorderSection } from '../../business/cv/sections.js';
 import { eventBus } from '../../core/dom/events.js';
-import { SECTION_NAMES_BY_LANG } from '../../config/constants.js';
-
-// The section order uses the key 'summary' where the CV labels use 'about'
-const LABEL_KEY_BY_SECTION = { summary: 'about' };
+import { SECTION_NAMES_BY_LANG, LABEL_KEY_BY_SECTION } from '../../config/constants.js';
 
 const getSectionName = (section, language) => {
     const names = SECTION_NAMES_BY_LANG[language] || SECTION_NAMES_BY_LANG.fr;

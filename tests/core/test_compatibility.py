@@ -118,14 +118,11 @@ class TestEncodingCompatibility:
         }
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Should generate successfully with unicode
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
 
 class TestCSVFormatCompatibility:
@@ -286,14 +283,11 @@ class TestEdgeCases:
         }
 
         generator = CVGenerator(data)
-        pdf_path = generator.generate()
+        pdf = generator.generate()
 
         # Should handle many skills
-        assert os.path.exists(pdf_path)
+        assert pdf.getbuffer().nbytes > 0
 
-        # Clean up
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
 
     def test_newlines_in_description(self, client):
         """Test handling of newlines in description fields."""

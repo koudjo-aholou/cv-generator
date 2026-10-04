@@ -3,6 +3,7 @@
  * Usage: <skills-editor></skills-editor>
  */
 
+import { escapeHtml } from '../../core/utils/formatters.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import * as skillsBusiness from '../../business/cv/skills.js';
 
@@ -64,7 +65,7 @@ export class SkillsEditor extends HTMLElement {
                 <h3>💡 Compétences</h3>
 
                 <div class="search-box">
-                    <input type="text" id="skills-search" placeholder="🔍 Rechercher une compétence..." value="${this.searchFilter}">
+                    <input type="text" id="skills-search" placeholder="🔍 Rechercher une compétence..." value="${escapeHtml(this.searchFilter)}">
                 </div>
 
                 <button class="add-item-btn">➕ Ajouter une compétence</button>
@@ -103,9 +104,9 @@ export class SkillsEditor extends HTMLElement {
             wrapper.innerHTML = `
                 <span class="drag-handle">☰</span>
                 <label class="item-toggle">
-                    <input type="checkbox" data-skill="${skill}" ${isSelected ? 'checked' : ''}>
-                    <span>${skill}</span>
-                    <button class="skill-delete-btn" data-skill="${skill}" title="Supprimer cette compétence">🗑️</button>
+                    <input type="checkbox" data-skill="${escapeHtml(skill)}" ${isSelected ? 'checked' : ''}>
+                    <span>${escapeHtml(skill)}</span>
+                    <button class="skill-delete-btn" data-skill="${escapeHtml(skill)}" title="Supprimer cette compétence">🗑️</button>
                 </label>
             `;
 
