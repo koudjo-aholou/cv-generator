@@ -62,12 +62,6 @@ export class StepperNav extends HTMLElement {
         const targetStep = document.getElementById(`step-${stepNumber}`);
         if (targetStep) {
             targetStep.classList.add('active');
-
-            // Dispatch event
-            this.dispatchEvent(new CustomEvent('step-changed', {
-                bubbles: true,
-                detail: { step: stepNumber }
-            }));
         }
     }
 

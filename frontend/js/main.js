@@ -185,9 +185,12 @@ class Application {
         // Go back to step 1
         stepperService.goToStep(1);
 
-        // Reset template selection
-        const modernRadio = document.querySelector('input[name="template"][value="modern"]');
-        if (modernRadio) modernRadio.checked = true;
+        // Rewrite every step-2 control from the freshly reset config and clear
+        // the personal inputs. These are read straight from the DOM when the
+        // PDF is built, so without this the previous person's details (email,
+        // address, birth date, nationality...) would leak into the next CV,
+        // and the language/format selects would contradict the actual config.
+        this.configView.syncFromConfig();
 
         // Clear notifications
         notifications.hide();

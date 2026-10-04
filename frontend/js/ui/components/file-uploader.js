@@ -5,7 +5,7 @@
 
 import { cvStateService } from '../../services/state/cvStateService.js';
 import { fileService } from '../../services/file/fileService.js';
-import { formatFileSize } from '../../core/utils/formatters.js';
+import { formatFileSize, escapeHtml } from '../../core/utils/formatters.js';
 import { validateCsvFiles } from '../../business/validation/fileValidator.js';
 
 export class FileUploader extends HTMLElement {
@@ -93,12 +93,6 @@ export class FileUploader extends HTMLElement {
         if (fileService.handleFiles(files)) {
             this.files = cvStateService.getFiles();
             this.renderFileList();
-
-            // Dispatch custom event
-            this.dispatchEvent(new CustomEvent('files-changed', {
-                bubbles: true,
-                detail: { files: this.files }
-            }));
         }
     }
 
@@ -115,8 +109,8 @@ export class FileUploader extends HTMLElement {
                 <div class="file-item-info">
                     <span class="file-icon">📄</span>
                     <div>
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${formatFileSize(file.size)}</div>
+                        <div class="file-name">${escapeHtml(file.name)}</div>
+                        <div class="file-size">${escapeHtml(formatFileSize(file.size))}</div>
                     </div>
                 </div>
                 <button class="remove-file" data-index="${index}">Retirer</button>
@@ -133,11 +127,6 @@ export class FileUploader extends HTMLElement {
         fileService.removeFile(index);
         this.files = cvStateService.getFiles();
         this.renderFileList();
-
-        this.dispatchEvent(new CustomEvent('files-changed', {
-            bubbles: true,
-            detail: { files: this.files }
-        }));
     }
 }
 

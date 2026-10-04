@@ -4,7 +4,6 @@
  */
 
 import { photoService } from '../../services/file/photoService.js';
-import { cvStateService } from '../../services/state/cvStateService.js';
 
 export class PhotoUploader extends HTMLElement {
     connectedCallback() {
@@ -55,11 +54,6 @@ export class PhotoUploader extends HTMLElement {
 
         if (photoService.handlePhotoUpload(file)) {
             this.showPreview(file);
-
-            this.dispatchEvent(new CustomEvent('photo-uploaded', {
-                bubbles: true,
-                detail: { file }
-            }));
         }
     }
 
@@ -93,10 +87,6 @@ export class PhotoUploader extends HTMLElement {
         previewImg.src = '';
         if (svg) svg.style.display = 'block';
         removeBtn.style.display = 'none';
-
-        this.dispatchEvent(new CustomEvent('photo-removed', {
-            bubbles: true
-        }));
     }
 }
 

@@ -72,7 +72,12 @@ class CvStateService {
 
     // Config
     getConfig() {
-        return store.get('currentConfig');
+        // Return a clone: callers follow a read-mutate-write pattern
+        // (getConfig() -> config.x = y -> setConfig(config)). Handing out the
+        // live object made the mutation land in the store before setConfig ran,
+        // so observers received the same reference as both old and new value
+        // and could not detect the change.
+        return deepClone(store.get('currentConfig'));
     }
 
     setConfig(config) {

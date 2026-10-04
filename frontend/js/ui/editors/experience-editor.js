@@ -3,6 +3,7 @@
  * Usage: <experience-editor></experience-editor>
  */
 
+import { escapeHtml } from '../../core/utils/formatters.js';
 import { cvStateService } from '../../services/state/cvStateService.js';
 import * as experienceBusiness from '../../business/cv/experience.js';
 
@@ -79,7 +80,7 @@ export class ExperienceEditor extends HTMLElement {
             item.innerHTML = `
                 <div class="editor-item-header">
                     <span class="editor-item-title">
-                        ${exp.title || 'Sans titre'} - ${exp.company || 'Entreprise'}
+                        ${escapeHtml(exp.title || 'Sans titre')} - ${escapeHtml(exp.company || 'Entreprise')}
                     </span>
                     <div class="editor-header-actions">
                         <button class="editor-toggle-btn" data-index="${index}">Modifier</button>
@@ -90,26 +91,26 @@ export class ExperienceEditor extends HTMLElement {
                     <div class="editor-row">
                         <div class="form-group">
                             <label>Titre du poste</label>
-                            <input type="text" data-field="title" value="${exp.title || ''}">
+                            <input type="text" data-field="title" value="${escapeHtml(exp.title || '')}">
                         </div>
                         <div class="form-group">
                             <label>Entreprise</label>
-                            <input type="text" data-field="company" value="${exp.company || ''}">
+                            <input type="text" data-field="company" value="${escapeHtml(exp.company || '')}">
                         </div>
                     </div>
                     <div class="editor-row">
                         <div class="form-group">
                             <label>Date de début</label>
-                            <input type="text" data-field="started_on" value="${exp.started_on || ''}" placeholder="Ex: Jan 2020">
+                            <input type="text" data-field="started_on" value="${escapeHtml(exp.started_on || '')}" placeholder="Ex: Jan 2020">
                         </div>
                         <div class="form-group">
                             <label>Date de fin</label>
-                            <input type="text" data-field="finished_on" value="${exp.finished_on || ''}" placeholder="Ex: Déc 2022">
+                            <input type="text" data-field="finished_on" value="${escapeHtml(exp.finished_on || '')}" placeholder="Ex: Déc 2022">
                         </div>
                     </div>
                     <div class="form-group">
                         <label>Description</label>
-                        <textarea data-field="description" rows="4">${exp.description || ''}</textarea>
+                        <textarea data-field="description" rows="4">${escapeHtml(exp.description || '')}</textarea>
                     </div>
                 </div>
             `;
@@ -129,7 +130,7 @@ export class ExperienceEditor extends HTMLElement {
             item.innerHTML = `
                 <input type="checkbox" data-visibility-index="${index}"
                        ${this.visibleIndices.includes(index) ? 'checked' : ''}>
-                <span>${exp.title || 'Sans titre'} - ${exp.company || 'Entreprise inconnue'}</span>
+                <span>${escapeHtml(exp.title || 'Sans titre')} - ${escapeHtml(exp.company || 'Entreprise inconnue')}</span>
             `;
             toggles.appendChild(item);
         });
