@@ -54,3 +54,8 @@ htmlcov/
 
 # Paramètres locaux d'outillage (personnels, non partagés)
 .claude/settings.local.json
+
+# Node / outillage de test frontend
+node_modules/
+playwright-report/
+test-results/
