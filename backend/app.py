@@ -151,8 +151,12 @@ def parse_linkedin():
         return jsonify(data)
 
     except Exception as e:
+        # The exception is logged in full server-side, but never returned to
+        # the client: str(e) leaks internals (file paths, module names, library
+        # internals) that help an attacker map the system and tell a legitimate
+        # user nothing useful.
         logger.error(f"Error parsing LinkedIn data: {e}", exc_info=True)
-        return jsonify({"error": "Failed to parse LinkedIn data", "details": str(e)}), 500
+        return jsonify({"error": "Failed to parse LinkedIn data"}), 500
 
     finally:
         # Always clean up temporary files
@@ -220,8 +224,9 @@ def generate_pdf():
         )
 
     except Exception as e:
+        # Same rule as above: logged in full, never echoed to the client.
         logger.error(f"Error generating PDF: {e}", exc_info=True)
-        return jsonify({"error": "Failed to generate PDF", "details": str(e)}), 500
+        return jsonify({"error": "Failed to generate PDF"}), 500
 
 if __name__ == '__main__':
     # Production-safe configuration

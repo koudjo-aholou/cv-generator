@@ -168,9 +168,11 @@ For production deployment:
 | Large File DoS | Size limits | ✅ Fixed |
 | Arbitrary File Upload | Extension whitelist | ✅ Fixed |
 | Memory Exhaustion | Size validation | ✅ Fixed |
-| Information Disclosure | Debug mode off | ✅ Fixed |
-| CORS Abuse | Origin restrictions | ✅ Fixed |
-| Temp File Accumulation | Guaranteed cleanup | ✅ Fixed |
+| Information Disclosure | Debug mode off + aucun détail d'exception dans les réponses 500 | ✅ Fixed |
+| CORS Abuse | Origines restreintes à localhost ; `null` refusée par défaut | ✅ Fixed |
+| Temp File Accumulation | Nettoyage garanti des CSV ; le PDF n'est jamais écrit sur disque | ✅ Fixed |
+| XSS / corruption de données | Échappement des données utilisateur avant tout rendu HTML et PDF | ✅ Fixed |
+| Exécution de script injecté | CSP stricte, sans `'unsafe-inline'` sur les scripts | ✅ Fixed |
 
 ### Remaining Considerations
 
