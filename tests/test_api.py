@@ -642,3 +642,134 @@ def test_cors_null_origin_can_be_opted_in(monkeypatch):
         # Restore the default config for the rest of the suite
         monkeypatch.delenv('ALLOW_FILE_ORIGIN')
         importlib.reload(app_module)
+
+
+# --- Divulgation d'information ----------------------------------------
+
+def _trigger_500(client):
+    """Provoque une erreur de generation : un profil non-dict fait lever
+    CVGenerator en profondeur, ce qui emprunte le gestionnaire d'exception."""
+    return client.post(
+        '/api/generate-pdf',
+        data=json.dumps({
+            'profile': 'pas-un-dict',
+            'positions': [], 'education': [], 'skills': [],
+            'languages': [], 'certifications': []
+        }),
+        content_type='application/json'
+    )
+
+
+def test_500_ne_renvoie_pas_le_detail_de_l_exception(client):
+    """Regression: les reponses 500 renvoyaient str(e) au client.
+
+    Le message d'exception expose des chemins de fichiers, des noms de
+    modules et des internes de bibliotheques — de quoi cartographier le
+    systeme, sans rien apprendre d'utile a un utilisateur legitime.
+    """
+    response = _trigger_500(client)
+
+    assert response.status_code == 500
+    # Verrouiller la FORME et pas seulement la cle 'details' : tout champ
+    # supplementaire est un canal de fuite potentiel, quel que soit son nom.
+    assert set(response.get_json()) == {'error'}
+
+
+def test_500_ne_fuit_ni_chemin_ni_module(client):
+    """Test qu'aucun indice sur le systeme ne transparait dans le corps.
+
+    Complementaire du test precedent, qui verrouille la forme : celui-ci
+    couvre le cas ou un chemin serait place DANS le message d'erreur
+    lui-meme, sans ajouter de champ.
+    """
+    response = _trigger_500(client)
+    corps = response.get_data(as_text=True)
+
+    for indice in ['Traceback', '.py', 'backend', 'site-packages',
+                   'File "', 'cv_generator', 'reportlab', 'AttributeError',
+                   'TypeError', 'C:\\', '/home/']:
+        assert indice not in corps, f"le corps 500 contient {indice!r} : {corps[:200]}"
+
+
+def test_500_reste_exploitable_par_le_client(client):
+    """Le durcissement ne doit pas rendre la reponse inutilisable."""
+    response = _trigger_500(client)
+    corps = response.get_json()
+
+    assert 'error' in corps
+    assert corps['error']
+    assert response.content_type.startswith('application/json')
+
+
+def test_500_de_parse_linkedin_ne_fuit_rien(client):
+    """Meme garantie sur l'autre gestionnaire 500.
+
+    Le correctif portait sur DEUX endpoints ; ne tester que celui du PDF
+    laissait celui-ci sans filet — verifie par mutation, la fuite y passait
+    inapercue sur l'ensemble de la suite.
+
+    Le message injecte contient un chemin, ce qui couvre d'un coup les deux
+    canaux : champ supplementaire et contenu revelateur.
+    """
+    from unittest.mock import patch
+
+    with patch('app.LinkedInParser', side_effect=RuntimeError('/opt/app/secret.py')):
+        response = client.post(
+            '/api/parse-linkedin',
+            data={'files': (BytesIO(b'Name\nX\n'), 'Profile.csv')},
+            content_type='multipart/form-data'
+        )
+
+    assert response.status_code == 500
+    assert set(response.get_json()) == {'error'}
+
+    corps = response.get_data(as_text=True)
+    assert '/opt/app' not in corps
+    assert 'secret.py' not in corps
+
+
+# Toutes les reponses d'erreur atteignables, 400 comme 500. Le contrat est le
+# meme partout : un unique champ « error », aucun detail interne. Tester les
+# deux 500 ne protegeait que deux lignes ; ce parcours verrouille le contrat
+# pour l'ensemble, y compris les chemins qu'aucun test n'exercait.
+REPONSES_ERREUR = [
+    ('corps vide', lambda c: c.post(
+        '/api/generate-pdf', data='null', content_type='application/json')),
+    ('corps non-objet', lambda c: c.post(
+        '/api/generate-pdf', data='[1,2]', content_type='application/json')),
+    ('config non-objet', lambda c: c.post(
+        '/api/generate-pdf',
+        data=json.dumps({'profile': {}, 'config': 'x'}),
+        content_type='application/json')),
+    ('photo trop grande', lambda c: c.post(
+        '/api/generate-pdf',
+        data=json.dumps({'profile': {}, 'photo': 'data:image/png;base64,' + 'A' * 9_000_000}),
+        content_type='application/json')),
+    ('aucun fichier', lambda c: c.post(
+        '/api/parse-linkedin', data={}, content_type='multipart/form-data')),
+    ('extension refusee', lambda c: c.post(
+        '/api/parse-linkedin',
+        data={'files': (BytesIO(b'x'), 'note.txt')},
+        content_type='multipart/form-data')),
+]
+
+
+@pytest.mark.parametrize('nom,appel', REPONSES_ERREUR, ids=[c[0] for c in REPONSES_ERREUR])
+def test_toute_reponse_erreur_respecte_le_contrat(client, nom, appel):
+    """Aucune reponse d'erreur ne doit porter de champ autre que « error »."""
+    response = appel(client)
+
+    assert response.status_code >= 400
+    corps = response.get_json()
+    assert corps is not None, f"{nom} ne renvoie pas du JSON"
+    assert set(corps) == {'error'}, f"{nom} expose des champs en trop : {set(corps)}"
+
+
+@pytest.mark.parametrize('nom,appel', REPONSES_ERREUR, ids=[c[0] for c in REPONSES_ERREUR])
+def test_aucune_reponse_erreur_ne_fuit_d_interne(client, nom, appel):
+    """Aucun chemin, module ou trace ne doit transparaitre, quel que soit le cas."""
+    corps = appel(client).get_data(as_text=True)
+
+    for indice in ['Traceback', '.py', 'site-packages', 'File "',
+                   'cv_generator', 'linkedin_parser', 'reportlab', '/home/']:
+        assert indice not in corps, f"{nom} contient {indice!r} : {corps[:160]}"
