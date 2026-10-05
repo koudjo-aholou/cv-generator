@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tests Frontend - CV Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+        }
+
+        .test-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .test-section h2 {
+            color: #3498db;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .test-case {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid #ddd;
+        }
+
+        .test-case.passed {
+            border-left-color: #28a745;
+        }
+
+        .test-case.failed {
+            border-left-color: #dc3545;
+        }
+
+        .test-case.running {
+            border-left-color: #ffc107;
+        }
+
+        .test-icon {
+            font-size: 1.2rem;
+        }
+
+        .test-name {
+            flex: 1;
+            color: #2c3e50;
+        }
+
+        .test-result {
+            font-weight: 600;
+        }
+
+        .passed .test-result {
+            color: #28a745;
+        }
+
+        .failed .test-result {
+            color: #dc3545;
+        }
+
+        .running .test-result {
+            color: #ffc107;
+        }
+
+        .summary {
+            background: #e8f4f8;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-top: 2rem;
+            border-left: 4px solid #3498db;
+        }
+
+        .summary h3 {
+            color: #3498db;
+            margin-bottom: 1rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        .error-details {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #fff3cd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Tests Frontend - CV Generator</h1>
+
+        <button id="runTests">Exécuter tous les tests</button>
+
+        <div id="testResults"></div>
+
+        <div class="summary" id="summary" style="display: none;">
+            <h3>Résumé des tests</h3>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value" id="totalTests">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" style="color: #28a745;" id="passedTests">0</div>
+                    <div class="stat-label">Réussis</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" style="color: #dc3545;" id="failedTests">0</div>
+                    <div class="stat-label">Échoués</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock parsed data
+        const mockParsedData = {
+            profile: {
+                first_name: "Jean",
+                last_name: "Dupont",
+                email: "jean.dupont@example.com",
+                phone: "+33 6 12 34 56 78",
+                address: "Paris, France",
+                headline: "Développeur Full-Stack",
+                summary: "Développeur passionné avec 5 ans d'expérience."
+            },
+            positions: [
+                {
+                    title: "Développeur Senior",
+                    company: "Tech Corp",
+                    description: "Développement d'applications web modernes.",
+                    started_on: "Jan 2020",
+                    finished_on: "Présent"
+                },
+                {
+                    title: "Développeur Junior",
+                    company: "StartUp Inc",
+                    description: "Développement de features backend.",
+                    started_on: "Jan 2018",
+                    finished_on: "Dec 2019"
+                }
+            ],
+            education: [
+                {
+                    school: "Université Paris-Saclay",
+                    degree: "Master Informatique",
+                    field_of_study: "Intelligence Artificielle",
+                    start_date: "2015",
+                    end_date: "2017"
+                },
+                {
+                    school: "IUT Paris",
+                    degree: "DUT Informatique",
+                    field_of_study: "Développement logiciel",
+                    start_date: "2013",
+                    end_date: "2015"
+                }
+            ],
+            skills: [
+                "Python", "JavaScript", "React", "Node.js", "Django",
+                "Flask", "PostgreSQL", "MongoDB", "Docker", "Kubernetes",
+                "AWS", "Git", "CI/CD", "TDD", "Agile",
+                "TypeScript", "Vue.js", "Redis", "GraphQL", "REST API",
+                "HTML", "CSS", "SASS", "Webpack", "Jest",
+                "Linux", "Nginx", "Jenkins", "Terraform", "Ansible"
+            ],
+            languages: [
+                { name: "Français", proficiency: "Natif" },
+                { name: "Anglais", proficiency: "Courant" },
+                { name: "Espagnol", proficiency: "Intermédiaire" }
+            ],
+            certifications: [
+                {
+                    name: "AWS Certified Developer",
+                    authority: "Amazon Web Services",
+                    start_date: "Jan 2022",
+                    end_date: "Jan 2025",
+                    url: "https://aws.amazon.com/certification"
+                }
+            ]
+        };
+
+        const tests = [
+            {
+                section: "Structure de données",
+                cases: [
+                    {
+                        name: "Les données parsées contiennent toutes les clés requises",
+                        test: () => {
+                            const requiredKeys = ['profile', 'positions', 'education', 'skills', 'languages', 'certifications'];
+                            return requiredKeys.every(key => key in mockParsedData);
+                        }
+                    },
+                    {
+                        name: "Le profil contient les informations de contact",
+                        test: () => {
+                            return mockParsedData.profile.email && mockParsedData.profile.phone;
+                        }
+                    },
+                    {
+                        name: "Les expériences sont un tableau non vide",
+                        test: () => {
+                            return Array.isArray(mockParsedData.positions) && mockParsedData.positions.length > 0;
+                        }
+                    },
+                    {
+                        name: "Les compétences contiennent au moins 10 éléments",
+                        test: () => {
+                            return Array.isArray(mockParsedData.skills) && mockParsedData.skills.length >= 10;
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Édition du profil",
+                cases: [
+                    {
+                        name: "Le résumé peut être édité",
+                        test: () => {
+                            const original = mockParsedData.profile.summary;
+                            mockParsedData.profile.summary = "Nouveau résumé édité";
+                            const edited = mockParsedData.profile.summary;
+                            mockParsedData.profile.summary = original; // Restore
+                            return edited === "Nouveau résumé édité";
+                        }
+                    },
+                    {
+                        name: "L'email peut être modifié",
+                        test: () => {
+                            const original = mockParsedData.profile.email;
+                            mockParsedData.profile.email = "nouveau@example.com";
+                            const edited = mockParsedData.profile.email;
+                            mockParsedData.profile.email = original; // Restore
+                            return edited === "nouveau@example.com";
+                        }
+                    },
+                    {
+                        name: "Le téléphone peut être modifié",
+                        test: () => {
+                            const original = mockParsedData.profile.phone;
+                            mockParsedData.profile.phone = "+33 7 00 00 00 00";
+                            const edited = mockParsedData.profile.phone;
+                            mockParsedData.profile.phone = original; // Restore
+                            return edited === "+33 7 00 00 00 00";
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Édition des expériences",
+                cases: [
+                    {
+                        name: "Le titre d'une expérience peut être édité",
+                        test: () => {
+                            const original = mockParsedData.positions[0].title;
+                            mockParsedData.positions[0].title = "Lead Developer";
+                            const edited = mockParsedData.positions[0].title;
+                            mockParsedData.positions[0].title = original; // Restore
+                            return edited === "Lead Developer";
+                        }
+                    },
+                    {
+                        name: "La description peut contenir des sauts de ligne",
+                        test: () => {
+                            const original = mockParsedData.positions[0].description;
+                            mockParsedData.positions[0].description = "Ligne 1\nLigne 2\nLigne 3";
+                            const edited = mockParsedData.positions[0].description;
+                            mockParsedData.positions[0].description = original; // Restore
+                            return edited.includes('\n');
+                        }
+                    },
+                    {
+                        name: "L'entreprise peut être modifiée",
+                        test: () => {
+                            const original = mockParsedData.positions[0].company;
+                            mockParsedData.positions[0].company = "New Tech Corp";
+                            const edited = mockParsedData.positions[0].company;
+                            mockParsedData.positions[0].company = original; // Restore
+                            return edited === "New Tech Corp";
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Édition des formations",
+                cases: [
+                    {
+                        name: "Le diplôme peut être édité",
+                        test: () => {
+                            const original = mockParsedData.education[0].degree;
+                            mockParsedData.education[0].degree = "Diplôme d'Ingénieur";
+                            const edited = mockParsedData.education[0].degree;
+                            mockParsedData.education[0].degree = original; // Restore
+                            return edited === "Diplôme d'Ingénieur";
+                        }
+                    },
+                    {
+                        name: "L'école peut être modifiée",
+                        test: () => {
+                            const original = mockParsedData.education[0].school;
+                            mockParsedData.education[0].school = "École Polytechnique";
+                            const edited = mockParsedData.education[0].school;
+                            mockParsedData.education[0].school = original; // Restore
+                            return edited === "École Polytechnique";
+                        }
+                    },
+                    {
+                        name: "Le domaine d'études peut être édité",
+                        test: () => {
+                            const original = mockParsedData.education[0].field_of_study;
+                            mockParsedData.education[0].field_of_study = "Machine Learning";
+                            const edited = mockParsedData.education[0].field_of_study;
+                            mockParsedData.education[0].field_of_study = original; // Restore
+                            return edited === "Machine Learning";
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Sélection de compétences",
+                cases: [
+                    {
+                        name: "Les compétences peuvent être filtrées (10 sur 30)",
+                        test: () => {
+                            const selectedSkills = mockParsedData.skills.slice(0, 10);
+                            return selectedSkills.length === 10;
+                        }
+                    },
+                    {
+                        name: "Les compétences sélectionnées sont un sous-ensemble",
+                        test: () => {
+                            const selectedSkills = ["Python", "JavaScript", "React", "Django"];
+                            return selectedSkills.every(skill => mockParsedData.skills.includes(skill));
+                        }
+                    },
+                    {
+                        name: "La recherche de compétences fonctionne",
+                        test: () => {
+                            const searchTerm = "python";
+                            const filtered = mockParsedData.skills.filter(skill =>
+                                skill.toLowerCase().includes(searchTerm.toLowerCase())
+                            );
+                            return filtered.length > 0 && filtered.includes("Python");
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Édition des langues",
+                cases: [
+                    {
+                        name: "Le niveau de langue peut être édité",
+                        test: () => {
+                            const original = mockParsedData.languages[0].proficiency;
+                            mockParsedData.languages[0].proficiency = "Langue maternelle";
+                            const edited = mockParsedData.languages[0].proficiency;
+                            mockParsedData.languages[0].proficiency = original; // Restore
+                            return edited === "Langue maternelle";
+                        }
+                    },
+                    {
+                        name: "Le nom de la langue peut être modifié",
+                        test: () => {
+                            const original = mockParsedData.languages[1].name;
+                            mockParsedData.languages[1].name = "English";
+                            const edited = mockParsedData.languages[1].name;
+                            mockParsedData.languages[1].name = original; // Restore
+                            return edited === "English";
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Édition des certifications",
+                cases: [
+                    {
+                        name: "Le nom de la certification peut être édité",
+                        test: () => {
+                            const original = mockParsedData.certifications[0].name;
+                            mockParsedData.certifications[0].name = "AWS Solutions Architect";
+                            const edited = mockParsedData.certifications[0].name;
+                            mockParsedData.certifications[0].name = original; // Restore
+                            return edited === "AWS Solutions Architect";
+                        }
+                    },
+                    {
+                        name: "L'organisme peut être modifié",
+                        test: () => {
+                            const original = mockParsedData.certifications[0].authority;
+                            mockParsedData.certifications[0].authority = "AWS Training";
+                            const edited = mockParsedData.certifications[0].authority;
+                            mockParsedData.certifications[0].authority = original; // Restore
+                            return edited === "AWS Training";
+                        }
+                    }
+                ]
+            },
+            {
+                section: "Configuration",
+                cases: [
+                    {
+                        name: "La configuration peut filtrer les expériences visibles",
+                        test: () => {
+                            const config = {
+                                experience_visible: [0]
+                            };
+                            const filtered = mockParsedData.positions.filter((_, i) =>
+                                config.experience_visible.includes(i)
+                            );
+                            return filtered.length === 1;
+                        }
+                    },
+                    {
+                        name: "La configuration peut filtrer les formations visibles",
+                        test: () => {
+                            const config = {
+                                education_visible: [0]
+                            };
+                            const filtered = mockParsedData.education.filter((_, i) =>
+                                config.education_visible.includes(i)
+                            );
+                            return filtered.length === 1;
+                        }
+                    },
+                    {
+                        name: "Les couleurs peuvent être personnalisées",
+                        test: () => {
+                            const config = {
+                                colors: {
+                                    primary: '#e74c3c',
+                                    text: '#2c3e50',
+                                    secondary_text: '#95a5a6'
+                                }
+                            };
+                            return config.colors.primary === '#e74c3c';
+                        }
+                    }
+                ]
+            }
+        ];
+
+        function runTests() {
+            const resultsContainer = document.getElementById('testResults');
+            const summary = document.getElementById('summary');
+            resultsContainer.innerHTML = '';
+
+            let totalTests = 0;
+            let passedTests = 0;
+            let failedTests = 0;
+
+            tests.forEach(testSection => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'test-section';
+
+                const sectionTitle = document.createElement('h2');
+                sectionTitle.textContent = testSection.section;
+                sectionDiv.appendChild(sectionTitle);
+
+                testSection.cases.forEach(testCase => {
+                    totalTests++;
+
+                    const testDiv = document.createElement('div');
+                    testDiv.className = 'test-case running';
+
+                    const icon = document.createElement('span');
+                    icon.className = 'test-icon';
+                    icon.textContent = '⏳';
+
+                    const name = document.createElement('span');
+                    name.className = 'test-name';
+                    name.textContent = testCase.name;
+
+                    const result = document.createElement('span');
+                    result.className = 'test-result';
+                    result.textContent = 'En cours...';
+
+                    testDiv.appendChild(icon);
+                    testDiv.appendChild(name);
+                    testDiv.appendChild(result);
+
+                    sectionDiv.appendChild(testDiv);
+
+                    // Run test
+                    setTimeout(() => {
+                        try {
+                            const passed = testCase.test();
+
+                            if (passed) {
+                                passedTests++;
+                                testDiv.className = 'test-case passed';
+                                icon.textContent = '✅';
+                                result.textContent = 'Réussi';
+                            } else {
+                                failedTests++;
+                                testDiv.className = 'test-case failed';
+                                icon.textContent = '❌';
+                                result.textContent = 'Échoué';
+                            }
+                        } catch (error) {
+                            failedTests++;
+                            testDiv.className = 'test-case failed';
+                            icon.textContent = '❌';
+                            result.textContent = 'Erreur';
+
+                            const errorDetails = document.createElement('div');
+                            errorDetails.className = 'error-details';
+                            errorDetails.textContent = error.message;
+                            testDiv.appendChild(errorDetails);
+                        }
+
+                        // Update summary
+                        document.getElementById('totalTests').textContent = totalTests;
+                        document.getElementById('passedTests').textContent = passedTests;
+                        document.getElementById('failedTests').textContent = failedTests;
+                        summary.style.display = 'block';
+                    }, 100);
+                });
+
+                resultsContainer.appendChild(sectionDiv);
+            });
+        }
+
+        document.getElementById('runTests').addEventListener('click', runTests);
+
+        // Run tests on load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

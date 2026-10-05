@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--
+      Content-Security-Policy. La page ne charge aucune ressource externe et
+      n'a aucun script en ligne, d'ou l'absence de 'unsafe-inline' sur les
+      scripts : c'est la protection qui empeche l'execution de code injecte.
+      Les trois tolerances sont justifiees par le code :
+        - img-src data:   apercu photo construit par FileReader.readAsDataURL
+        - frame-src blob: apercu PDF via URL.createObjectURL dans une iframe
+        - connect-src     la page est servie sur :8080, l'API ecoute sur :5000
+      Le hash couvre les 12 attributs de style du projet, qui portent tous
+      exactement la meme declaration, et n'autorise aucun autre style inline.
+      frame-ancestors est volontairement absente : elle est ignoree en <meta>
+      et n'existe qu'en en-tete HTTP.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-hashes' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog=';
+        img-src 'self' data:;
+        frame-src blob:;
+        connect-src 'self' http://localhost:5000 http://127.0.0.1:5000;
+        object-src 'none';
+        base-uri 'none';
+        form-action 'none'">
+    <title>LinkedIn CV Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📄 Générateur de CV LinkedIn</h1>
+            <p class="subtitle">Transformez votre profil LinkedIn en CV professionnel</p>
+        </header>
+
+        <!-- Stepper Indicator -->
+        <div class="stepper-indicator">
+            <span id="stepperText">Étape 1/3</span>
+        </div>
+
+        <main>
+            <!-- ÉTAPE 1: IMPORT -->
+            <div id="step-1" class="step-content active">
+                <!-- Instructions -->
+                <section class="card">
+                    <h2>📋 Comment ça marche ?</h2>
+                    <ol>
+                        <li>
+                            <strong>Exportez vos données LinkedIn :</strong>
+                            <ul>
+                                <li>Allez sur LinkedIn → <em>Paramètres et confidentialité</em></li>
+                                <li>Cliquez sur <em>Confidentialité des données</em></li>
+                                <li>Sélectionnez <em>Obtenir une copie de vos données</em></li>
+                                <li>Choisissez les données à exporter (Profil, Postes, Formation, etc.)</li>
+                                <li>Téléchargez le fichier ZIP et extrayez-le</li>
+                            </ul>
+                        </li>
+                        <li><strong>Téléversez les fichiers CSV</strong> ci-dessous</li>
+                        <li><strong>Ajoutez une photo</strong> (optionnel) pour personnaliser votre CV</li>
+                        <li><strong>Téléchargez votre CV</strong> en PDF</li>
+                    </ol>
+                    <div class="info-box">
+                        <strong>🔒 Confidentialité :</strong> Toutes les données sont traitées localement.
+                        Aucune information n'est sauvegardée sur un serveur.
+                    </div>
+                </section>
+
+                <!-- File Upload Web Component -->
+                <section class="card">
+                    <h2>📤 Téléverser vos fichiers LinkedIn</h2>
+                    <p class="help-text">Sélectionnez les fichiers CSV de votre export LinkedIn</p>
+
+                    <div class="required-files-info">
+                        <h3>📁 Fichiers CSV nécessaires :</h3>
+                        <div class="files-grid">
+                            <div class="file-badge required">📄 Profile.csv</div>
+                            <div class="file-badge required">📄 Positions.csv</div>
+                            <div class="file-badge required">📄 Education.csv</div>
+                            <div class="file-badge optional">📄 Skills.csv</div>
+                            <div class="file-badge optional">📄 Languages.csv</div>
+                            <div class="file-badge optional">📄 Certifications.csv</div>
+                            <div class="file-badge optional">📄 Email Addresses.csv</div>
+                            <div class="file-badge optional">📄 PhoneNumbers.csv</div>
+                            <div class="file-badge optional">📄 Whatsapp Phone Numbers.csv</div>
+                        </div>
+                        <p class="files-note">
+                            <span class="required-badge">●</span> <strong>Requis</strong> : Fichiers essentiels pour générer votre CV
+                            <br>
+                            <span class="optional-badge">●</span> <strong>Optionnels</strong> : Fichiers pour enrichir votre CV
+                        </p>
+                    </div>
+
+                    <file-uploader></file-uploader>
+                </section>
+
+                <!-- Photo Upload Web Component -->
+                <section class="card">
+                    <photo-uploader></photo-uploader>
+                </section>
+
+                <!-- Navigation -->
+                <div class="step-navigation">
+                    <button id="nextStep1" class="btn-primary">
+                        Suivant →
+                    </button>
+                </div>
+            </div>
+
+            <!-- ÉTAPE 2: PERSONNALISATION -->
+            <div id="step-2" class="step-content">
+                <section id="preview-section" class="card">
+                <h2>🎨 Personnalisez votre CV</h2>
+                <p class="help-text">Configurez les sections à inclure dans votre CV</p>
+
+                <!-- Configuration Panel -->
+                <div class="config-panel-fullwidth">
+                        <div class="config-section">
+                            <h3>🌐 Langue et format du CV</h3>
+                            <p class="config-help">Choisissez la langue des intitulés et, si besoin, le format suisse</p>
+                            <div class="contact-fields">
+                                <div class="form-group">
+                                    <label for="cv-language">Langue</label>
+                                    <select id="cv-language">
+                                        <option value="fr">Français</option>
+                                        <option value="en">English</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cv-type">Format</label>
+                                    <select id="cv-type">
+                                        <option value="standard">Standard</option>
+                                        <option value="swiss">Suisse</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>📧 Informations de contact</h3>
+                            <p class="config-help">Modifiez vos coordonnées si nécessaire</p>
+                            <div class="contact-fields">
+                                <div class="form-group">
+                                    <label for="profile-headline">Intitulé</label>
+                                    <input type="text" id="profile-headline" placeholder="Ex: Développeur Full Stack">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-email">Email</label>
+                                    <input type="email" id="contact-email" placeholder="votre.email@exemple.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-phone">Téléphone</label>
+                                    <input type="tel" id="contact-phone" placeholder="+33 6 12 34 56 78">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-address">Adresse</label>
+                                    <input type="text" id="contact-address" placeholder="Ville, Pays">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section" id="swiss-fields-section" style="display: none;">
+                            <h3>🇨🇭 Informations personnelles (format suisse)</h3>
+                            <p class="config-help">Ces informations sont courantes sur les CV suisses</p>
+                            <div class="contact-fields">
+                                <div class="form-group">
+                                    <label for="contact-birth-date">Date de naissance</label>
+                                    <input type="date" id="contact-birth-date">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-nationality">Nationalité</label>
+                                    <input type="text" id="contact-nationality" placeholder="Ex: Suisse">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-civil-status">État civil</label>
+                                    <input type="text" id="contact-civil-status" placeholder="Ex: Célibataire">
+                                </div>
+                                <div class="form-group">
+                                    <label for="contact-permit">Permis de travail</label>
+                                    <input type="text" id="contact-permit" placeholder="Ex: Permis C">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section" id="profile-summary-section">
+                            <h3>📝 À propos</h3>
+                            <p class="config-help">Éditez votre résumé / à propos</p>
+                            <div class="form-group">
+                                <textarea id="profile-summary" rows="6" placeholder="Décrivez votre profil professionnel..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>🎨 Template et Couleurs</h3>
+                            <p class="config-help">Choisissez un template et personnalisez les couleurs</p>
+
+                            <div class="template-selector">
+                                <label class="template-option" data-template="modern">
+                                    <input type="radio" name="template" value="modern" checked>
+                                    <div class="template-card">
+                                        <div class="template-preview modern-preview"></div>
+                                        <span class="template-name">Moderne</span>
+                                    </div>
+                                </label>
+                                <label class="template-option" data-template="classic">
+                                    <input type="radio" name="template" value="classic">
+                                    <div class="template-card">
+                                        <div class="template-preview classic-preview"></div>
+                                        <span class="template-name">Classique</span>
+                                    </div>
+                                </label>
+                                <label class="template-option" data-template="creative">
+                                    <input type="radio" name="template" value="creative">
+                                    <div class="template-card">
+                                        <div class="template-preview creative-preview"></div>
+                                        <span class="template-name">Créatif</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="color-pickers">
+                                <div class="form-group">
+                                    <label for="color-primary">Couleur principale</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-primary" value="#3498db">
+                                        <input type="text" id="color-primary-hex" value="#3498db" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="color-text">Texte principal</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-text" value="#2c3e50">
+                                        <input type="text" id="color-text-hex" value="#2c3e50" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="color-secondary-text">Texte secondaire</label>
+                                    <div class="color-input-group">
+                                        <input type="color" id="color-secondary-text" value="#7f8c8d">
+                                        <input type="text" id="color-secondary-text-hex" value="#7f8c8d" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>📋 Sections du CV</h3>
+                            <p class="config-help">Cochez les sections à inclure dans votre CV</p>
+                            <div class="section-toggles">
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-summary" checked>
+                                    <span>À Propos</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-experience" checked>
+                                    <span>Expérience Professionnelle</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-education" checked>
+                                    <span>Formations</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-skills" checked>
+                                    <span>Compétences</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-languages" checked>
+                                    <span>Langues</span>
+                                </label>
+                                <label class="toggle-item">
+                                    <input type="checkbox" id="toggle-certifications" checked>
+                                    <span>Certifications</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>✏️ Intitulés des sections</h3>
+                            <p class="config-help">Personnalisez les titres affichés dans le CV</p>
+                            <div class="labels-grid">
+                                <div class="form-group"><label for="label-about">À Propos</label><input type="text" id="label-about" placeholder="À Propos"></div>
+                                <div class="form-group"><label for="label-experience">Expériences</label><input type="text" id="label-experience" placeholder="Expériences Professionnelles"></div>
+                                <div class="form-group"><label for="label-education">Formations</label><input type="text" id="label-education" placeholder="Formations"></div>
+                                <div class="form-group"><label for="label-skills">Compétences</label><input type="text" id="label-skills" placeholder="Compétences"></div>
+                                <div class="form-group"><label for="label-languages">Langues</label><input type="text" id="label-languages" placeholder="Langues"></div>
+                                <div class="form-group"><label for="label-certifications">Certifications</label><input type="text" id="label-certifications" placeholder="Certifications"></div>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h3>🔄 Ordre des sections</h3>
+                            <p class="config-help">Faites glisser pour réorganiser</p>
+                            <div id="section-order" class="section-order-list">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <experience-editor></experience-editor>
+
+                        <education-editor></education-editor>
+
+                        <skills-editor></skills-editor>
+
+                        <languages-editor></languages-editor>
+
+                        <certifications-editor></certifications-editor>
+
+                </div>
+
+                <!-- Navigation -->
+                <div class="step-navigation">
+                    <button id="prevStep2" class="btn-secondary">
+                        ← Précédent
+                    </button>
+                    <button id="nextStep2" class="btn-primary">
+                        Suivant →
+                    </button>
+                </div>
+                </section>
+            </div>
+
+            <!-- ÉTAPE 3: EXPORT -->
+            <div id="step-3" class="step-content">
+                <section class="card">
+                    <h2>📥 Aperçu et téléchargement</h2>
+                    <p class="help-text">Visualisez votre CV et téléchargez-le en PDF</p>
+
+                    <!-- PDF Preview -->
+                    <div class="pdf-preview-fullwidth">
+                        <div class="preview-header">
+                            <h3>Aperçu du CV</h3>
+                        </div>
+                        <div class="preview-frame-container">
+                            <iframe id="pdfPreviewFrame" title="Aperçu du CV"></iframe>
+                            <div id="previewLoading" class="preview-loading" style="display: none;">
+                                <div class="spinner"></div>
+                                <p>Génération de l'aperçu...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="export-actions">
+                        <button id="refreshPreviewBtn" class="btn-secondary">
+                            🔄 Rafraîchir l'aperçu
+                        </button>
+                        <button id="downloadFinalBtn" class="btn-primary">
+                            📥 Télécharger le CV
+                        </button>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="step-navigation">
+                        <button id="prevStep3" class="btn-secondary">
+                            ← Précédent
+                        </button>
+                        <button id="resetBtn" class="btn-secondary">
+                            Recommencer
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Success message -->
+            <section id="success-section" class="card" style="display: none;">
+                <div class="success-message-content">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <h2>✅ CV généré avec succès !</h2>
+                    <p>Votre CV a été téléchargé. Vérifiez votre dossier de téléchargements.</p>
+                    <button id="newCvBtn" class="btn-primary">
+                        Générer un nouveau CV
+                    </button>
+                </div>
+            </section>
+
+            <!-- Loading spinner -->
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Traitement en cours...</p>
+            </div>
+
+            <!-- Error message -->
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </main>
+
+        <footer>
+            <p>Développé avec ❤️ | Vos données restent privées et locales</p>
+        </footer>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

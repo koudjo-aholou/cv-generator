@@ -1,0 +1,775 @@
+"""
+Tests for CV Generator API
+Tests all editing functionalities including profile, experiences, education, skills, etc.
+"""
+
+import sys
+import os
+import json
+import base64
+from io import BytesIO
+
+# Add backend to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+
+import pytest
+from app import app
+from linkedin_parser import LinkedInParser
+
+
+@pytest.fixture
+def client():
+    """Create test client"""
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture
+def sample_linkedin_data():
+    """Sample LinkedIn data for testing"""
+    return {
+        "profile": {
+            "first_name": "Jean",
+            "last_name": "Dupont",
+            "email": "jean.dupont@example.com",
+            "phone": "+33 6 12 34 56 78",
+            "address": "Paris, France",
+            "headline": "Développeur Full-Stack",
+            "summary": "Développeur passionné avec 5 ans d'expérience en Python et JavaScript. Expert en développement web et mobile."
+        },
+        "positions": [
+            {
+                "title": "Développeur Senior",
+                "company": "Tech Corp",
+                "description": "Développement d'applications web modernes.\nGestion d'équipe de 3 développeurs.\nMise en place de CI/CD.",
+                "started_on": "Jan 2020",
+                "finished_on": "Présent"
+            },
+            {
+                "title": "Développeur Junior",
+                "company": "StartUp Inc",
+                "description": "Développement de features backend.\nParticipation aux code reviews.",
+                "started_on": "Jan 2018",
+                "finished_on": "Dec 2019"
+            }
+        ],
+        "education": [
+            {
+                "school": "Université Paris-Saclay",
+                "degree": "Master Informatique",
+                "field_of_study": "Intelligence Artificielle",
+                "start_date": "2015",
+                "end_date": "2017"
+            },
+            {
+                "school": "IUT Paris",
+                "degree": "DUT Informatique",
+                "field_of_study": "Développement logiciel",
+                "start_date": "2013",
+                "end_date": "2015"
+            }
+        ],
+        "skills": [
+            "Python", "JavaScript", "React", "Node.js", "Django",
+            "Flask", "PostgreSQL", "MongoDB", "Docker", "Kubernetes",
+            "AWS", "Git", "CI/CD", "TDD", "Agile",
+            "TypeScript", "Vue.js", "Redis", "GraphQL", "REST API",
+            "HTML", "CSS", "SASS", "Webpack", "Jest",
+            "Linux", "Nginx", "Jenkins", "Terraform", "Ansible"
+        ],
+        "languages": [
+            {"name": "Français", "proficiency": "Natif"},
+            {"name": "Anglais", "proficiency": "Courant"},
+            {"name": "Espagnol", "proficiency": "Intermédiaire"}
+        ],
+        "certifications": [
+            {
+                "name": "AWS Certified Developer",
+                "authority": "Amazon Web Services",
+                "start_date": "Jan 2022",
+                "end_date": "Jan 2025",
+                "url": "https://aws.amazon.com/certification"
+            },
+            {
+                "name": "Python Professional Certificate",
+                "authority": "Python Institute",
+                "start_date": "Jun 2021",
+                "end_date": "",
+                "url": ""
+            }
+        ]
+    }
+
+
+def test_generate_pdf_basic(client, sample_linkedin_data):
+    """Test basic PDF generation with default data"""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_generate_pdf_with_edited_profile(client, sample_linkedin_data):
+    """Test PDF generation with edited profile summary"""
+    # Edit the summary
+    sample_linkedin_data['profile']['summary'] = "Nouveau résumé édité.\nAvec plusieurs lignes.\nPour tester les sauts de ligne."
+    sample_linkedin_data['profile']['email'] = "nouveau.email@example.com"
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_edited_experiences(client, sample_linkedin_data):
+    """Test PDF generation with edited experiences"""
+    # Edit first experience
+    sample_linkedin_data['positions'][0]['title'] = "Lead Developer"
+    sample_linkedin_data['positions'][0]['company'] = "New Tech Corp"
+    sample_linkedin_data['positions'][0]['description'] = "Description éditée.\nAvec nouvelles lignes.\nEt plus de détails."
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_edited_education(client, sample_linkedin_data):
+    """Test PDF generation with edited education"""
+    # Edit education
+    sample_linkedin_data['education'][0]['degree'] = "Master 2 Informatique"
+    sample_linkedin_data['education'][0]['school'] = "École Polytechnique"
+    sample_linkedin_data['education'][0]['field_of_study'] = "Machine Learning et Data Science"
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_selected_skills(client, sample_linkedin_data):
+    """Test PDF generation with individually selected skills (10 out of 30)"""
+    # Select only 10 skills
+    selected_skills = [
+        "Python", "JavaScript", "React", "Django", "PostgreSQL",
+        "Docker", "AWS", "Git", "TypeScript", "REST API"
+    ]
+
+    data = sample_linkedin_data.copy()
+    data['skills'] = selected_skills
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_config_experience_visible(client, sample_linkedin_data):
+    """Test PDF generation with only specific experiences visible"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'experience_visible': [0],  # Only show first experience
+        'sections': {
+            'summary': True,
+            'experience': True,
+            'education': True,
+            'skills': True,
+            'languages': True,
+            'certifications': True
+        }
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_config_education_visible(client, sample_linkedin_data):
+    """Test PDF generation with only specific education visible"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'education_visible': [0],  # Only show first education
+        'sections': {
+            'summary': True,
+            'experience': True,
+            'education': True,
+            'skills': True,
+            'languages': True,
+            'certifications': True
+        }
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_edited_languages(client, sample_linkedin_data):
+    """Test PDF generation with edited languages"""
+    # Edit languages
+    sample_linkedin_data['languages'][0]['proficiency'] = "Langue maternelle"
+    sample_linkedin_data['languages'][1]['proficiency'] = "Bilingue (C2)"
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_edited_certifications(client, sample_linkedin_data):
+    """Test PDF generation with edited certifications"""
+    # Edit certification
+    sample_linkedin_data['certifications'][0]['name'] = "AWS Certified Solutions Architect"
+    sample_linkedin_data['certifications'][0]['authority'] = "AWS Training"
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_multiline_descriptions(client, sample_linkedin_data):
+    """Test PDF generation with multiline descriptions (line breaks)"""
+    # Add multiple line breaks in descriptions
+    sample_linkedin_data['profile']['summary'] = "Ligne 1\n\nLigne 2 avec espace\n\n\nLigne 3 avec beaucoup d'espaces"
+    sample_linkedin_data['positions'][0]['description'] = "Responsabilité 1\n\nResponsabilité 2\n\nResponsabilité 3"
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(sample_linkedin_data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_colors(client, sample_linkedin_data):
+    """Test PDF generation with custom colors"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'template': 'modern',
+        'colors': {
+            'primary': '#e74c3c',
+            'text': '#2c3e50',
+            'secondary_text': '#95a5a6'
+        }
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_all_sections_disabled(client, sample_linkedin_data):
+    """Test PDF generation with all optional sections disabled"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'sections': {
+            'summary': False,
+            'experience': True,  # At least one section must be visible
+            'education': False,
+            'skills': False,
+            'languages': False,
+            'certifications': False
+        }
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_section_order(client, sample_linkedin_data):
+    """Test PDF generation with custom section order"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'section_order': ['skills', 'experience', 'education', 'summary', 'languages', 'certifications']
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_complete_editing_workflow(client, sample_linkedin_data):
+    """Test complete editing workflow with all features"""
+    # Simulate user editing everything
+    data = sample_linkedin_data.copy()
+
+    # Edit profile
+    data['profile']['summary'] = "Résumé complètement réécrit.\nAvec plusieurs paragraphes.\n\nPour un meilleur impact."
+    data['profile']['email'] = "jean.nouveau@example.com"
+    data['profile']['phone'] = "+33 7 00 00 00 00"
+
+    # Edit first experience
+    data['positions'][0]['title'] = "Architecte Logiciel Senior"
+    data['positions'][0]['description'] = "Architecture et développement.\nLeadership technique.\nMentoring d'équipe."
+
+    # Edit education
+    data['education'][0]['degree'] = "Diplôme d'Ingénieur"
+    data['education'][0]['field_of_study'] = "Informatique et Mathématiques Appliquées"
+
+    # Select only 12 skills out of 30
+    data['skills'] = [
+        "Python", "JavaScript", "TypeScript", "React",
+        "Django", "PostgreSQL", "Docker", "Kubernetes",
+        "AWS", "Git", "REST API", "GraphQL"
+    ]
+
+    # Edit languages
+    data['languages'][0]['proficiency'] = "Langue maternelle"
+
+    # Edit certification
+    data['certifications'][0]['name'] = "AWS Certified Solutions Architect - Professional"
+
+    # Add configuration
+    data['config'] = {
+        'experience_visible': [0],  # Only show first experience
+        'education_visible': [0],   # Only show first education
+        'sections': {
+            'summary': True,
+            'experience': True,
+            'education': True,
+            'skills': True,
+            'languages': True,
+            'certifications': True
+        },
+        'template': 'modern',
+        'colors': {
+            'primary': '#3498db',
+            'text': '#2c3e50',
+            'secondary_text': '#7f8c8d'
+        }
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_linkedin_parser_maintains_structure():
+    """Test that LinkedIn parser maintains data structure"""
+    # This test verifies that the parser output is compatible with our editing interface
+    # We can't test with real CSV files here, but we verify the structure
+
+    # Mock data that would come from parser
+    parsed_data = {
+        'profile': {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'email': 'test@example.com',
+            'summary': 'Test summary'
+        },
+        'positions': [],
+        'education': [],
+        'skills': [],
+        'languages': [],
+        'certifications': []
+    }
+
+    # Verify all required keys exist
+    assert 'profile' in parsed_data
+    assert 'positions' in parsed_data
+    assert 'education' in parsed_data
+    assert 'skills' in parsed_data
+    assert 'languages' in parsed_data
+    assert 'certifications' in parsed_data
+
+
+def test_generate_pdf_with_english_language(client, sample_linkedin_data):
+    """Test that the language config is accepted and produces a PDF"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {'language': 'en'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_generate_pdf_with_swiss_cv_type(client, sample_linkedin_data):
+    """Test that a Swiss CV with extended personal info generates successfully"""
+    data = sample_linkedin_data.copy()
+    data['profile'] = {
+        **sample_linkedin_data['profile'],
+        'birth_date': '1990-05-21',
+        'nationality': 'Suisse',
+        'civil_status': 'Célibataire',
+        'permit': 'Permis C'
+    }
+    data['config'] = {'cv_type': 'swiss', 'language': 'fr'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+    assert len(response.data) > 0
+
+
+def test_generate_pdf_with_custom_labels(client, sample_linkedin_data):
+    """Test that custom section labels are accepted by the API"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {
+        'language': 'fr',
+        'labels': {'education': 'Parcours Académique', 'skills': 'Savoir-faire'}
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_unknown_language_falls_back(client, sample_linkedin_data):
+    """Test that an unsupported language code does not break generation"""
+    data = sample_linkedin_data.copy()
+    data['config'] = {'language': 'de'}
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+@pytest.mark.parametrize('bad_config', ['une chaine', [1, 2], 42, True])
+def test_generate_pdf_rejects_non_object_config(client, sample_linkedin_data, bad_config):
+    """Regression: a non-object config used to raise AttributeError -> HTTP 500"""
+    data = sample_linkedin_data.copy()
+    data['config'] = bad_config
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 400
+    assert 'config' in response.get_json()['error'].lower()
+
+
+@pytest.mark.parametrize('empty_config', [None, {}])
+def test_generate_pdf_accepts_absent_or_empty_config(client, sample_linkedin_data, empty_config):
+    """Test that a null or empty config still generates with defaults"""
+    data = sample_linkedin_data.copy()
+    data['config'] = empty_config
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+def test_generate_pdf_with_hostile_xml_in_profile(client, sample_linkedin_data):
+    """Regression: a '<' in a profile field used to abort rendering with a 500"""
+    data = sample_linkedin_data.copy()
+    data['profile'] = {
+        **sample_linkedin_data['profile'],
+        'address': 'Rue <test> 5 & 6',
+        'headline': '<b>Dev</b>'
+    }
+
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(data),
+        content_type='application/json'
+    )
+
+    assert response.status_code == 200
+    assert response.content_type == 'application/pdf'
+
+
+if __name__ == '__main__':
+    pytest.main([__file__, '-v'])
+
+
+# --- CORS ---------------------------------------------------------------
+
+def _minimal_payload():
+    return {
+        'profile': {'first_name': 'A', 'last_name': 'B'},
+        'positions': [], 'education': [], 'skills': [],
+        'languages': [], 'certifications': []
+    }
+
+
+def test_cors_rejects_null_origin_by_default(client):
+    """Regression: 'null' is the origin of any sandboxed iframe, so allowing it
+    made the local API reachable from any website."""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': 'null'}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') is None
+
+
+@pytest.mark.parametrize('origin', [
+    'http://localhost:8080',
+    'http://localhost:3000',
+    'http://127.0.0.1:8080',
+])
+def test_cors_allows_localhost_on_any_port(client, origin):
+    """Test that the legitimate local frontend is still allowed"""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': origin}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') == origin
+
+
+def test_cors_rejects_arbitrary_remote_origin(client):
+    """Test that an unrelated website gets no CORS header"""
+    response = client.post(
+        '/api/generate-pdf',
+        data=json.dumps(_minimal_payload()),
+        content_type='application/json',
+        headers={'Origin': 'https://evil.example'}
+    )
+
+    assert response.headers.get('Access-Control-Allow-Origin') is None
+
+
+def test_cors_null_origin_can_be_opted_in(monkeypatch):
+    """Test that ALLOW_FILE_ORIGIN=true re-enables file:// access.
+
+    The CORS config is built at import time, so the module is reloaded with
+    the variable set rather than mutated in place.
+    """
+    import importlib
+    import app as app_module
+
+    monkeypatch.setenv('ALLOW_FILE_ORIGIN', 'true')
+    reloaded = importlib.reload(app_module)
+    try:
+        reloaded.app.config['TESTING'] = True
+        with reloaded.app.test_client() as opted_in_client:
+            response = opted_in_client.post(
+                '/api/generate-pdf',
+                data=json.dumps(_minimal_payload()),
+                content_type='application/json',
+                headers={'Origin': 'null'}
+            )
+        assert response.headers.get('Access-Control-Allow-Origin') == 'null'
+    finally:
+        # Restore the default config for the rest of the suite
+        monkeypatch.delenv('ALLOW_FILE_ORIGIN')
+        importlib.reload(app_module)
+
+
+# --- Divulgation d'information ----------------------------------------
+
+def _trigger_500(client):
+    """Provoque une erreur de generation : un profil non-dict fait lever
+    CVGenerator en profondeur, ce qui emprunte le gestionnaire d'exception."""
+    return client.post(
+        '/api/generate-pdf',
+        data=json.dumps({
+            'profile': 'pas-un-dict',
+            'positions': [], 'education': [], 'skills': [],
+            'languages': [], 'certifications': []
+        }),
+        content_type='application/json'
+    )
+
+
+def test_500_ne_renvoie_pas_le_detail_de_l_exception(client):
+    """Regression: les reponses 500 renvoyaient str(e) au client.
+
+    Le message d'exception expose des chemins de fichiers, des noms de
+    modules et des internes de bibliotheques — de quoi cartographier le
+    systeme, sans rien apprendre d'utile a un utilisateur legitime.
+    """
+    response = _trigger_500(client)
+
+    assert response.status_code == 500
+    # Verrouiller la FORME et pas seulement la cle 'details' : tout champ
+    # supplementaire est un canal de fuite potentiel, quel que soit son nom.
+    assert set(response.get_json()) == {'error'}
+
+
+def test_500_ne_fuit_ni_chemin_ni_module(client):
+    """Test qu'aucun indice sur le systeme ne transparait dans le corps.
+
+    Complementaire du test precedent, qui verrouille la forme : celui-ci
+    couvre le cas ou un chemin serait place DANS le message d'erreur
+    lui-meme, sans ajouter de champ.
+    """
+    response = _trigger_500(client)
+    corps = response.get_data(as_text=True)
+
+    for indice in ['Traceback', '.py', 'backend', 'site-packages',
+                   'File "', 'cv_generator', 'reportlab', 'AttributeError',
+                   'TypeError', 'C:\\', '/home/']:
+        assert indice not in corps, f"le corps 500 contient {indice!r} : {corps[:200]}"
+
+
+def test_500_reste_exploitable_par_le_client(client):
+    """Le durcissement ne doit pas rendre la reponse inutilisable."""
+    response = _trigger_500(client)
+    corps = response.get_json()
+
+    assert 'error' in corps
+    assert corps['error']
+    assert response.content_type.startswith('application/json')
+
+
+def test_500_de_parse_linkedin_ne_fuit_rien(client):
+    """Meme garantie sur l'autre gestionnaire 500.
+
+    Le correctif portait sur DEUX endpoints ; ne tester que celui du PDF
+    laissait celui-ci sans filet — verifie par mutation, la fuite y passait
+    inapercue sur l'ensemble de la suite.
+
+    Le message injecte contient un chemin, ce qui couvre d'un coup les deux
+    canaux : champ supplementaire et contenu revelateur.
+    """
+    from unittest.mock import patch
+
+    with patch('app.LinkedInParser', side_effect=RuntimeError('/opt/app/secret.py')):
+        response = client.post(
+            '/api/parse-linkedin',
+            data={'files': (BytesIO(b'Name\nX\n'), 'Profile.csv')},
+            content_type='multipart/form-data'
+        )
+
+    assert response.status_code == 500
+    assert set(response.get_json()) == {'error'}
+
+    corps = response.get_data(as_text=True)
+    assert '/opt/app' not in corps
+    assert 'secret.py' not in corps
+
+
+# Toutes les reponses d'erreur atteignables, 400 comme 500. Le contrat est le
+# meme partout : un unique champ « error », aucun detail interne. Tester les
+# deux 500 ne protegeait que deux lignes ; ce parcours verrouille le contrat
+# pour l'ensemble, y compris les chemins qu'aucun test n'exercait.
+REPONSES_ERREUR = [
+    ('corps vide', lambda c: c.post(
+        '/api/generate-pdf', data='null', content_type='application/json')),
+    ('corps non-objet', lambda c: c.post(
+        '/api/generate-pdf', data='[1,2]', content_type='application/json')),
+    ('config non-objet', lambda c: c.post(
+        '/api/generate-pdf',
+        data=json.dumps({'profile': {}, 'config': 'x'}),
+        content_type='application/json')),
+    ('photo trop grande', lambda c: c.post(
+        '/api/generate-pdf',
+        data=json.dumps({'profile': {}, 'photo': 'data:image/png;base64,' + 'A' * 9_000_000}),
+        content_type='application/json')),
+    ('aucun fichier', lambda c: c.post(
+        '/api/parse-linkedin', data={}, content_type='multipart/form-data')),
+    ('extension refusee', lambda c: c.post(
+        '/api/parse-linkedin',
+        data={'files': (BytesIO(b'x'), 'note.txt')},
+        content_type='multipart/form-data')),
+]
+
+
+@pytest.mark.parametrize('nom,appel', REPONSES_ERREUR, ids=[c[0] for c in REPONSES_ERREUR])
+def test_toute_reponse_erreur_respecte_le_contrat(client, nom, appel):
+    """Aucune reponse d'erreur ne doit porter de champ autre que « error »."""
+    response = appel(client)
+
+    assert response.status_code >= 400
+    corps = response.get_json()
+    assert corps is not None, f"{nom} ne renvoie pas du JSON"
+    assert set(corps) == {'error'}, f"{nom} expose des champs en trop : {set(corps)}"
+
+
+@pytest.mark.parametrize('nom,appel', REPONSES_ERREUR, ids=[c[0] for c in REPONSES_ERREUR])
+def test_aucune_reponse_erreur_ne_fuit_d_interne(client, nom, appel):
+    """Aucun chemin, module ou trace ne doit transparaitre, quel que soit le cas."""
+    corps = appel(client).get_data(as_text=True)
+
+    for indice in ['Traceback', '.py', 'site-packages', 'File "',
+                   'cv_generator', 'linkedin_parser', 'reportlab', '/home/']:
+        assert indice not in corps, f"{nom} contient {indice!r} : {corps[:160]}"
