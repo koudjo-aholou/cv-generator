@@ -76,7 +76,8 @@ class StorageRepository:
         if meta is None:
             return None, None
         resolved_version = version if version is not None else meta.get("latest_version")
-        version_meta = meta.get("history", {}).get(str(resolved_version), meta)
+        version_meta = dict(meta.get("history", {}).get(str(resolved_version), meta))
+        version_meta["version"] = resolved_version
         snapshot = _read_json(self.version_path(job_id, resolved_version))
         return version_meta, snapshot
 
