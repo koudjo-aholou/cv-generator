@@ -36,6 +36,10 @@ Thumbs.db
 # Generated CVs (saved locally)
 /cv/*.pdf
 
+# MCP server runtime storage (base profile + CV version history JSON)
+/mcp_server/storage/*
+!/mcp_server/storage/.gitkeep
+
 # User data directory (for personal LinkedIn CSV files)
 my_data/*
 !my_data/.gitkeep

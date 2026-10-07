@@ -4,6 +4,9 @@ Werkzeug==3.0.1
 reportlab==4.0.7
 Pillow==10.1.0
 
+# MCP server (Telegram bot integration) - stdio transport, no LLM calls here
+mcp>=1.2.0
+
 # Testing dependencies
 pytest==7.4.3
 pytest-cov==4.1.0
