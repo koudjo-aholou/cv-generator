@@ -7,9 +7,18 @@ from a global env var) and operates on `base_profile.json`.
 
 from __future__ import annotations
 
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
 from mcp_server.core.storage import StorageRepository
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+from backend.linkedin_parser import LinkedInParser  # noqa: E402
 
 
 def _load_or_empty(repo: StorageRepository) -> dict:
@@ -24,6 +33,24 @@ def _load_or_empty(repo: StorageRepository) -> dict:
             "certifications": [],
         }
     return data
+
+
+def set_base_profile(repo: StorageRepository, data: dict) -> dict:
+    repo.save_base_profile(data)
+    return {"status": "ok", "saved_at": datetime.now(timezone.utc).isoformat()}
+
+
+def get_base_profile(repo: StorageRepository) -> dict:
+    data = repo.load_base_profile()
+    if data is None:
+        return {"error": "not_found"}
+    return data
+
+
+def import_linkedin_csv(repo: StorageRepository, file_paths: list) -> dict:
+    data = LinkedInParser(file_paths).parse()
+    repo.save_base_profile(data)
+    return {"data": data, "saved_as_base_profile": True}
 
 
 def update_profile_field(repo: StorageRepository, field: str, value: Any) -> dict:
