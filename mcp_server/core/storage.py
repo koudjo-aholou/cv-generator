@@ -63,9 +63,11 @@ class StorageRepository:
     # -- versions -------------------------------------------------------
 
     def save_version(self, job_id: str, meta: dict, snapshot: dict, version: int) -> None:
-        meta_on_disk = _read_json(self.meta_path(job_id)) or {}
-        meta_on_disk.update(meta)
+        meta_on_disk = _read_json(self.meta_path(job_id)) or {"history": {}}
+        meta_on_disk.setdefault("history", {})
+        meta_on_disk.update({k: v for k, v in meta.items() if k != "history"})
         meta_on_disk["latest_version"] = version
+        meta_on_disk["history"][str(version)] = dict(meta)
         _atomic_write_json(self.meta_path(job_id), meta_on_disk)
         _atomic_write_json(self.version_path(job_id, version), snapshot)
 
@@ -74,19 +76,20 @@ class StorageRepository:
         if meta is None:
             return None, None
         resolved_version = version if version is not None else meta.get("latest_version")
+        version_meta = meta.get("history", {}).get(str(resolved_version), meta)
         snapshot = _read_json(self.version_path(job_id, resolved_version))
-        return meta, snapshot
+        return version_meta, snapshot
 
     def list_versions(self, job_id: Optional[str] = None):
         if job_id is not None:
-            versions_dir = self.versions_dir(job_id)
-            if not versions_dir.exists():
+            meta = _read_json(self.meta_path(job_id))
+            if meta is None:
                 return []
-            versions = []
-            for path in sorted(versions_dir.glob("v*.json")):
-                number = int(path.stem[1:])
-                snapshot = _read_json(path)
-                versions.append({"version": number, "snapshot": snapshot})
+            history = meta.get("history", {})
+            versions = [
+                {"version": int(number), **entry}
+                for number, entry in sorted(history.items(), key=lambda kv: int(kv[0]))
+            ]
             return versions
 
         all_jobs_dir = self.base_dir / "versions"
