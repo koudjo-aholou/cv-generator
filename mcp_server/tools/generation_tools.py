@@ -39,11 +39,18 @@ def _make_job_id(company: str, job_title: str) -> str:
     return f"{_slugify(company)}-{_slugify(job_title)}-{timestamp}"
 
 
-def _render_and_save_pdf(data: dict, config: dict, cv_output_dir: Path) -> str:
+def _render_and_save_pdf(data: dict, config: dict, cv_output_dir: Path, job_id: str, version: int) -> str:
     generator = CVGenerator(data, config)
     buffer = generator.generate()
     cv_output_dir.mkdir(parents=True, exist_ok=True)
-    filename = generator.suggested_filename()
+
+    # suggested_filename() only has second-granularity and is meant for a
+    # single ad-hoc download, not many PDFs generated in the same process —
+    # several job_id/version calls within the same second would otherwise
+    # collide and silently overwrite each other's PDF. Disambiguate with
+    # the job_id/version, which is unique by construction.
+    base_name = Path(generator.suggested_filename()).stem
+    filename = f"{base_name}_{job_id}_v{version}.pdf"
     pdf_path = cv_output_dir / filename
     pdf_path.write_bytes(buffer.read())
     return str(pdf_path)
@@ -85,9 +92,9 @@ def generate_cv_from_job(
     if tailored_summary:
         data.setdefault("profile", {})["summary"] = tailored_summary
 
-    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir))
-
     job_id = _make_job_id(company, job_title)
+    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=1)
+
     created_at = datetime.now(timezone.utc).isoformat()
     meta = {
         "job_id": job_id,
@@ -138,9 +145,10 @@ def _improve_cv(
     if tailored_summary:
         data.setdefault("profile", {})["summary"] = tailored_summary
 
-    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir))
-
-    next_version = meta.get("latest_version", base_version) + 1
+    existing_versions = repo.list_versions(job_id)
+    latest_version = max((v["version"] for v in existing_versions), default=base_version)
+    next_version = latest_version + 1
+    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=next_version)
     new_meta = dict(meta)
     new_meta.update(
         {
