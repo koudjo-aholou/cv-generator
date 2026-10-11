@@ -57,9 +57,35 @@ def build_short_config(overrides: dict, data: dict) -> dict:
     }
 
 
+def build_custom_config(overrides: dict, data: dict) -> dict:
+    """Every section on, experiences in the caller's relevance order.
+
+    CVGenerator renders positions in the order of `experience_visible`, so
+    ordering by relevance is just a matter of passing the indices in order.
+    """
+    education_visible = overrides.get("education_visible_indices")
+    if education_visible is None:
+        education_visible = _all_indices(data.get("education"))
+
+    return {
+        "sections": {
+            "summary": True,
+            "experience": True,
+            "education": True,
+            "skills": True,
+            "languages": True,
+            "certifications": True,
+        },
+        "experience_visible": [item["index"] for item in overrides.get("experiences") or []],
+        "education_visible": list(education_visible),
+        "skills_selected": overrides.get("skills_selected"),
+    }
+
+
 VARIANT_BUILDERS = {
     "short": build_short_config,
     "long": build_long_config,
+    "custom": build_custom_config,
 }
 
 
@@ -81,6 +107,53 @@ def build_config(variant: str, overrides: dict, data: dict) -> dict:
         config["template"] = template
 
     return config
+
+
+def _validate_custom_content(experiences: list, about: Optional[str], positions_count: int) -> None:
+    if not about or not about.strip():
+        raise ValueError("about must be a non-empty text")
+    if not experiences:
+        raise ValueError("experiences must list at least one position index")
+
+    seen = set()
+    for item in experiences:
+        index = item.get("index")
+        if not isinstance(index, int) or isinstance(index, bool) or index < 0 or index >= positions_count:
+            raise ValueError(
+                f"experience index {index!r} is out of range (base profile has {positions_count} positions)"
+            )
+        if index in seen:
+            raise ValueError(f"experience index {index} is listed more than once")
+        seen.add(index)
+
+
+def apply_custom_content(
+    data: dict,
+    experiences: list,
+    headline: Optional[str],
+    about: str,
+) -> dict:
+    """Inject the custom CV's wording into a deep copy of `data`.
+
+    Truthfulness guard: the caller may only reword a position's
+    `description`. Every factual field (title, company, dates, location,
+    missions) stays locked to the base profile; extra keys are ignored.
+    """
+    positions_count = len(data.get("positions") or [])
+    _validate_custom_content(experiences, about, positions_count)
+
+    custom = copy.deepcopy(data)
+    profile = custom.setdefault("profile", {})
+    profile["summary"] = about
+    if headline:
+        profile["headline"] = headline
+
+    for item in experiences:
+        description = item.get("description")
+        if description:
+            custom["positions"][item["index"]]["description"] = description
+
+    return custom
 
 
 def _truncate_to_two_bullets(description: str) -> str:
