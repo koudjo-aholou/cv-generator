@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from mcp_server.core.cv_config_builder import build_config, condense_data
+from mcp_server.core.cv_config_builder import apply_custom_content, build_config, condense_data
 from mcp_server.core.storage import StorageRepository
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -37,6 +37,12 @@ def _slugify(value: str) -> str:
 def _make_job_id(company: str, job_title: str) -> str:
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     return f"{_slugify(company)}-{_slugify(job_title)}-{timestamp}"
+
+
+def _next_version(repo: StorageRepository, job_id: str, fallback: int = 0) -> int:
+    """Next free version number for an existing job (latest on disk + 1)."""
+    existing_versions = repo.list_versions(job_id)
+    return max((v["version"] for v in existing_versions), default=fallback) + 1
 
 
 def _render_and_save_pdf(data: dict, config: dict, cv_output_dir: Path, job_id: str, version: int) -> str:
@@ -145,10 +151,8 @@ def _improve_cv(
     if tailored_summary:
         data.setdefault("profile", {})["summary"] = tailored_summary
 
-    existing_versions = repo.list_versions(job_id)
-    latest_version = max((v["version"] for v in existing_versions), default=base_version)
-    next_version = latest_version + 1
-    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=next_version)
+    next_version = _next_version(repo, job_id, fallback=base_version)
+    pdf_path =_render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=next_version)
     new_meta = dict(meta)
     new_meta.update(
         {
@@ -162,6 +166,74 @@ def _improve_cv(
     repo.save_version(job_id, new_meta, new_snapshot, version=next_version)
 
     return {"job_id": job_id, "pdf_path": pdf_path, "variant": variant, "version": next_version}
+
+
+def generate_custom_cv(
+    repo: StorageRepository,
+    job_title: str,
+    company: str,
+    about: str,
+    experiences: list,
+    company_research: str,
+    headline: Optional[str] = None,
+    skills_selected: Optional[list] = None,
+    education_visible_indices: Optional[list] = None,
+    colors: Optional[dict] = None,
+    template: Optional[str] = None,
+    job_id: Optional[str] = None,
+    cv_output_dir: Path = DEFAULT_CV_OUTPUT_DIR,
+) -> dict:
+    """Render a CV tailored to one posting: relevance-ordered experiences
+    plus an "À propos" written by the caller from company research and the
+    real base profile. The wording comes from the caller; this function
+    only enforces the truthfulness guard and renders.
+    """
+    base_data = repo.load_base_profile()
+    if base_data is None:
+        return {"status": "error", "error": "no_base_profile"}
+
+    if job_id is not None:
+        if not repo.list_versions(job_id):
+            return {"status": "error", "error": "job_not_found"}
+        version = _next_version(repo, job_id)
+    else:
+        job_id = _make_job_id(company, job_title)
+        version = 1
+
+    try:
+        data = apply_custom_content(base_data, experiences=experiences, headline=headline, about=about)
+    except ValueError as exc:
+        return {"status": "error", "error": str(exc)}
+
+    overrides = {
+        "experiences": experiences,
+        "skills_selected": skills_selected,
+        "education_visible_indices": education_visible_indices,
+        "colors": colors,
+        "template": template,
+    }
+    config = build_config("custom", overrides, base_data)
+
+    pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=version)
+
+    meta = {
+        "job_id": job_id,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "job_title": job_title,
+        "company": company,
+        "variant": "custom",
+        "pdf_path": pdf_path,
+        "status": "generated",
+    }
+    snapshot = {
+        "data": data,
+        "config": config,
+        "about": about,
+        "company_research": company_research,
+    }
+    repo.save_version(job_id, meta, snapshot, version=version)
+
+    return {"job_id": job_id, "pdf_path": pdf_path, "variant": "custom", "version": version}
 
 
 def improve_cv_short(
