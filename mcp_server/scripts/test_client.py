@@ -64,6 +64,28 @@ SAMPLE_PROFILE = {
 }
 
 
+CUSTOM_COMPANY = "Northwind Health Data"
+CUSTOM_JOB_POSTING = (
+    "Northwind Health Data recrute un Senior Data Engineer pour industrialiser "
+    "ses pipelines Airflow sur Kubernetes."
+)
+CUSTOM_COMPANY_RESEARCH = (
+    "Northwind Health Data publie des outils open-source d'interopérabilité "
+    "pour les données hospitalières."
+)
+CUSTOM_ABOUT = (
+    "Northwind Health Data ouvre ses outils d'interopérabilité hospitalière en "
+    "open-source ; c'est le type de plateforme que j'ai construit chez Beta Inc, "
+    "où je possédais les pipelines Airflow et le schéma de l'entrepôt.\n"
+    "Chez Acme Corp, j'ai mené la migration vers Kubernetes : l'environnement "
+    "cible de vos pipelines."
+)
+
+# The custom CV puts positions[1] first; its title must lead the experience
+# section of the rendered PDF.
+CUSTOM_FIRST_TITLE = SAMPLE_PROFILE["positions"][1]["title"]
+
+
 async def run() -> dict:
     from mcp import ClientSession, StdioServerParameters
     from mcp.client.stdio import stdio_client
@@ -130,6 +152,31 @@ async def run() -> dict:
             fetched = await session.call_tool("get_cv", {"job_id": results["short_cv"]["job_id"]})
             results["get_cv"] = _tool_result_json(fetched)
 
+            # Custom CV flow: the client renders the brief prompt (its own LLM
+            # would execute it), then calls generate_custom_cv with the result.
+            brief = await session.get_prompt(
+                "custom_cv_brief",
+                {"job_posting": CUSTOM_JOB_POSTING, "company_research": CUSTOM_COMPANY_RESEARCH},
+            )
+            results["custom_brief"] = brief.messages[0].content.text
+
+            custom_cv = await session.call_tool(
+                "generate_custom_cv",
+                {
+                    "job_title": "Senior Data Engineer",
+                    "company": CUSTOM_COMPANY,
+                    "headline": "Data Engineer - pipelines Airflow & plateformes data",
+                    "about": CUSTOM_ABOUT,
+                    "experiences": [
+                        {"index": 1, "description": "Built and owned the Airflow ETL pipelines feeding the warehouse."},
+                        {"index": 0, "description": None},
+                    ],
+                    "skills_selected": ["Airflow", "Python", "Kubernetes"],
+                    "company_research": CUSTOM_COMPANY_RESEARCH,
+                },
+            )
+            results["custom_cv"] = _tool_result_json(custom_cv)
+
     return results
 
 
@@ -139,31 +186,70 @@ def _tool_result_json(call_tool_result) -> dict:
     return json.loads(text)
 
 
-def main() -> None:
-    results = asyncio.run(run())
+PDF_KEYS = ("long_cv", "short_cv", "improved_cv", "custom_cv")
 
-    print(json.dumps(results, indent=2))
 
-    for key in ("long_cv", "short_cv", "improved_cv"):
+def _extract_pdf_text(pdf_path: Path):
+    """Return the PDF's text, or None when no PDF reader is installed.
+
+    pypdf is deliberately not a dependency: the text check is a bonus that
+    runs only where a reader happens to be available.
+    """
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return None
+    return "\n".join(page.extract_text() or "" for page in PdfReader(str(pdf_path)).pages)
+
+
+def check_results(results: dict) -> list:
+    """Assert the scenario's outcome; return human-readable OK lines."""
+    lines = []
+    for key in PDF_KEYS:
         pdf_path = Path(results[key]["pdf_path"])
         assert pdf_path.exists(), f"{key}: PDF not found at {pdf_path}"
         assert pdf_path.stat().st_size > 0, f"{key}: PDF at {pdf_path} is empty"
-        print(f"OK {key}: {pdf_path} ({pdf_path.stat().st_size} bytes)")
+        lines.append(f"OK {key}: {pdf_path} ({pdf_path.stat().st_size} bytes)")
+
+    assert results["improved_cv"]["version"] == 2
+    assert len(results["versions"]["versions"]) == 2
+
+    brief = results["custom_brief"]
+    assert CUSTOM_COMPANY_RESEARCH in brief
+    assert SAMPLE_PROFILE["positions"][0]["company"] in brief
+    assert results["custom_cv"]["variant"] == "custom"
+
+    text = _extract_pdf_text(Path(results["custom_cv"]["pdf_path"]))
+    if text is None:
+        lines.append("SKIP custom_cv text check: no PDF reader (pypdf) installed")
+    else:
+        flat = " ".join(text.split())
+        assert CUSTOM_COMPANY in flat, "company name missing from custom CV"
+        # Anchor on the experience section header: the first title is also a
+        # substring of the headline and of another position's title.
+        header = "PROFESSIONNELLES"
+        assert header in flat, "experience section header not found"
+        experience_part = flat.split(header, 1)[1].strip()
+        assert experience_part.startswith(CUSTOM_FIRST_TITLE + " "), (
+            f"reordered first experience '{CUSTOM_FIRST_TITLE}' is not rendered first"
+        )
+        lines.append("OK custom_cv text: company name + reordered first experience found")
+    return lines
+
+
+def main() -> None:
+    results = asyncio.run(run())
+
+    print(json.dumps({k: v for k, v in results.items() if k != "custom_brief"}, indent=2))
+    for line in check_results(results):
+        print(line)
 
     print("End-to-end MCP stdio smoke test passed.")
 
 
 def test_end_to_end_mcp_stdio_client():
     """pytest entrypoint for the same scenario `main()` runs standalone."""
-    results = asyncio.run(run())
-
-    for key in ("long_cv", "short_cv", "improved_cv"):
-        pdf_path = Path(results[key]["pdf_path"])
-        assert pdf_path.exists()
-        assert pdf_path.stat().st_size > 0
-
-    assert results["improved_cv"]["version"] == 2
-    assert len(results["versions"]["versions"]) == 2
+    check_results(asyncio.run(run()))
 
 
 if __name__ == "__main__":

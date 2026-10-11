@@ -22,6 +22,7 @@ from mcp.server.fastmcp import FastMCP
 from mcp_server.core.storage import StorageRepository
 from mcp_server.tools import generation_tools as gen_tools
 from mcp_server.tools import profile_tools as prof_tools
+from mcp_server.tools import prompt_tools
 from mcp_server.tools import version_tools as ver_tools
 
 STORAGE_DIR = Path(os.environ.get("MCP_STORAGE_DIR", _REPO_ROOT / "mcp_server" / "storage"))
@@ -144,6 +145,44 @@ def generate_cv_from_job(
 
 
 @mcp.tool()
+def generate_custom_cv(
+    job_title: str,
+    company: str,
+    about: str,
+    experiences: list[dict],
+    company_research: str,
+    headline: Optional[str] = None,
+    skills_selected: Optional[list] = None,
+    education_visible_indices: Optional[list] = None,
+    colors: Optional[dict] = None,
+    template: Optional[str] = None,
+    job_id: Optional[str] = None,
+) -> dict:
+    """Generate a CV tailored to one posting: experiences in relevance order
+    (`experiences` = ordered [{"index": int, "description": str|null}]) and an
+    "À propos" (`about`) linking the company research to the real profile.
+    Only descriptions can be reworded; titles, companies and dates stay locked
+    to the base profile. Pass `job_id` to save as a new version of an existing
+    job. See the `custom_cv_brief` prompt for how to prepare the inputs.
+    """
+    return gen_tools.generate_custom_cv(
+        _repo,
+        job_title=job_title,
+        company=company,
+        about=about,
+        experiences=experiences,
+        company_research=company_research,
+        headline=headline,
+        skills_selected=skills_selected,
+        education_visible_indices=education_visible_indices,
+        colors=colors,
+        template=template,
+        job_id=job_id,
+        cv_output_dir=CV_OUTPUT_DIR,
+    )
+
+
+@mcp.tool()
 def improve_cv_short(
     job_id: str,
     base_version: int = 1,
@@ -196,6 +235,18 @@ def list_cv_versions(job_id: Optional[str] = None):
 def get_cv(job_id: str, version: Optional[int] = None) -> dict:
     """Fetch metadata + config for one CV version (defaults to latest)."""
     return ver_tools.get_cv(_repo, job_id=job_id, version=version)
+
+
+# -- prompts ------------------------------------------------------------------
+
+
+@mcp.prompt()
+def custom_cv_brief(job_posting: str, company_research: str) -> str:
+    """Instructions for preparing a truthful, original custom CV, embedding
+    the current base profile. Executed by the client's LLM, not here."""
+    return prompt_tools.custom_cv_brief(
+        _repo, job_posting=job_posting, company_research=company_research
+    )
 
 
 if __name__ == "__main__":
