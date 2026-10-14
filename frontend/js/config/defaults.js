@@ -31,6 +31,7 @@ export const DEFAULT_CONFIG = {
     education_visible: null,
     skills_selected: null,
     template: 'modern',
+    photo_position: 'right',
     colors: {
         primary: '#3498db',
         text: '#2c3e50',

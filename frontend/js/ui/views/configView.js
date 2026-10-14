@@ -74,6 +74,9 @@ export class ConfigView {
 
         this.toggleSwissSection(config.cv_type);
 
+        const photoPositionSelect = $('photo-position');
+        if (photoPositionSelect) photoPositionSelect.value = config.photo_position;
+
         // Labels fall back to the defaults of the configured language
         const defaults = SECTION_NAMES_BY_LANG[config.language] || SECTION_NAMES_BY_LANG.fr;
         LABEL_KEYS.forEach((key) => {
@@ -141,6 +144,15 @@ export class ConfigView {
                 cvStateService.setConfig(config);
 
                 this.toggleSwissSection(cvType);
+            });
+        }
+
+        const photoPositionSelect = $('photo-position');
+        if (photoPositionSelect) {
+            photoPositionSelect.addEventListener('change', (e) => {
+                const config = cvStateService.getConfig();
+                config.photo_position = e.target.value;
+                cvStateService.setConfig(config);
             });
         }
     }

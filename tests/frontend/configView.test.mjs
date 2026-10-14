@@ -161,3 +161,28 @@ describe('syncFromConfig', () => {
         }
     });
 });
+
+describe('position de la photo', () => {
+    test('est a droite par defaut', () => {
+        assert.equal($('photo-position').value, 'right');
+        assert.equal(cvStateService.getConfig().photo_position, 'right');
+    });
+
+    test('ecrit le choix dans la config', () => {
+        const select = $('photo-position');
+        select.value = 'none';
+        select.dispatchEvent(new globalThis.Event('change'));
+
+        assert.equal(cvStateService.getConfig().photo_position, 'none');
+    });
+
+    test('revient a droite au reset', () => {
+        const select = $('photo-position');
+        select.value = 'left';
+        select.dispatchEvent(new globalThis.Event('change'));
+        cvStateService.reset();
+        view.syncFromConfig();
+
+        assert.equal($('photo-position').value, 'right');
+    });
+});
