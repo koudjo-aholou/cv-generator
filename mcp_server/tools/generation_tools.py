@@ -16,7 +16,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from mcp_server.core.cv_config_builder import apply_custom_content, build_config, condense_data
+from mcp_server.core.cv_config_builder import (
+    BACKEND_PHOTO_POSITION,
+    apply_custom_content,
+    build_config,
+    condense_data,
+)
 from mcp_server.core.storage import StorageRepository
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -73,6 +78,7 @@ def generate_cv_from_job(
     education_visible_indices: Optional[list] = None,
     colors: Optional[dict] = None,
     template: Optional[str] = None,
+    photo_position: Optional[str] = None,
     cv_output_dir: Path = DEFAULT_CV_OUTPUT_DIR,
 ) -> dict:
     base_data = repo.load_base_profile()
@@ -85,8 +91,12 @@ def generate_cv_from_job(
         "education_visible_indices": education_visible_indices,
         "colors": colors,
         "template": template,
+        "photo_position": photo_position,
     }
-    config = build_config(variant, overrides, base_data)
+    try:
+        config = build_config(variant, overrides, base_data)
+    except ValueError as exc:
+        return {"status": "error", "error": str(exc)}
 
     data = copy.deepcopy(base_data)
     if variant == "short":
@@ -125,6 +135,7 @@ def _improve_cv(
     tailored_summary: Optional[str],
     experience_selection: Optional[dict],
     skills_selected: Optional[list],
+    photo_position: Optional[str],
     cv_output_dir: Path,
 ) -> dict:
     meta, snapshot = repo.get_version(job_id, version=base_version)
@@ -138,9 +149,13 @@ def _improve_cv(
         "experience_selection": experience_selection or {},
         "skills_selected": skills_selected if skills_selected is not None else config.get("skills_selected"),
         "education_visible_indices": config.get("education_visible"),
+        "photo_position": photo_position or config.get("photo_position", BACKEND_PHOTO_POSITION),
     }
     base_profile_for_defaults = {"positions": data.get("positions", []), "education": data.get("education", [])}
-    config = build_config(variant, overrides, base_profile_for_defaults)
+    try:
+        config = build_config(variant, overrides, base_profile_for_defaults)
+    except ValueError as exc:
+        return {"status": "error", "error": str(exc)}
 
     if variant == "short":
         data = condense_data(
@@ -180,6 +195,7 @@ def generate_custom_cv(
     education_visible_indices: Optional[list] = None,
     colors: Optional[dict] = None,
     template: Optional[str] = None,
+    photo_position: Optional[str] = None,
     job_id: Optional[str] = None,
     cv_output_dir: Path = DEFAULT_CV_OUTPUT_DIR,
 ) -> dict:
@@ -200,19 +216,19 @@ def generate_custom_cv(
         job_id = _make_job_id(company, job_title)
         version = 1
 
-    try:
-        data = apply_custom_content(base_data, experiences=experiences, headline=headline, about=about)
-    except ValueError as exc:
-        return {"status": "error", "error": str(exc)}
-
     overrides = {
         "experiences": experiences,
         "skills_selected": skills_selected,
         "education_visible_indices": education_visible_indices,
         "colors": colors,
         "template": template,
+        "photo_position": photo_position,
     }
-    config = build_config("custom", overrides, base_data)
+    try:
+        data = apply_custom_content(base_data, experiences=experiences, headline=headline, about=about)
+        config = build_config("custom", overrides, base_data)
+    except ValueError as exc:
+        return {"status": "error", "error": str(exc)}
 
     pdf_path = _render_and_save_pdf(data, config, Path(cv_output_dir), job_id=job_id, version=version)
 
@@ -243,6 +259,7 @@ def improve_cv_short(
     tailored_summary: Optional[str] = None,
     experience_selection: Optional[dict] = None,
     skills_selected: Optional[list] = None,
+    photo_position: Optional[str] = None,
     cv_output_dir: Path = DEFAULT_CV_OUTPUT_DIR,
 ) -> dict:
     return _improve_cv(
@@ -253,6 +270,7 @@ def improve_cv_short(
         tailored_summary=tailored_summary,
         experience_selection=experience_selection,
         skills_selected=skills_selected,
+        photo_position=photo_position,
         cv_output_dir=cv_output_dir,
     )
 
@@ -264,6 +282,7 @@ def improve_cv_long(
     tailored_summary: Optional[str] = None,
     experience_selection: Optional[dict] = None,
     skills_selected: Optional[list] = None,
+    photo_position: Optional[str] = None,
     cv_output_dir: Path = DEFAULT_CV_OUTPUT_DIR,
 ) -> dict:
     return _improve_cv(
@@ -274,5 +293,6 @@ def improve_cv_long(
         tailored_summary=tailored_summary,
         experience_selection=experience_selection,
         skills_selected=skills_selected,
+        photo_position=photo_position,
         cv_output_dir=cv_output_dir,
     )

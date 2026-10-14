@@ -70,3 +70,23 @@ def test_condense_data_uses_emphasis_note_when_provided():
     )
 
     assert condensed["positions"][0]["description"] == "custom focus text"
+
+
+def test_build_config_puts_photo_on_left_for_every_variant():
+    custom_overrides = {"experiences": [{"index": 0}]}
+    for variant, overrides in (("short", {}), ("long", {}), ("custom", custom_overrides)):
+        config = build_config(variant, overrides, SAMPLE_DATA)
+        assert config["photo_position"] == "left", variant
+
+
+def test_build_config_photo_position_can_be_overridden():
+    config = build_config("long", {"photo_position": "right"}, SAMPLE_DATA)
+
+    assert config["photo_position"] == "right"
+
+
+def test_build_config_rejects_unknown_photo_position():
+    import pytest
+
+    with pytest.raises(ValueError, match="photo_position"):
+        build_config("long", {"photo_position": "centre"}, SAMPLE_DATA)

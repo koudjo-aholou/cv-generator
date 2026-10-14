@@ -1039,40 +1039,49 @@ class CVGenerator:
         for line in contact_lines:
             info_elements.append(Paragraph(line, self.styles["Contact"]))
 
-        # Always render a photo column: use the uploaded photo, or a placeholder
-        # avatar to keep a consistent layout when no photo was provided.
-        # Swiss CVs conventionally feature a larger, more prominent photo.
-        photo_img = self._create_photo_image()
+        # Unless photo_position is "none", render a photo column: the uploaded
+        # photo, or a placeholder avatar to keep a consistent layout.
+        photo_position = self.config.get("photo_position")
+        photo_img = None if photo_position == "none" else self._create_photo_image()
 
         if photo_img is not None:
-            photo_col_width = 50 * mm if self.cv_type == "swiss" else 40 * mm
-            info_col_width = 170 * mm - photo_col_width
-            # Create table with info on left and photo on right
-            header_table = Table(
-                [[info_elements, photo_img]],
-                colWidths=[info_col_width, photo_col_width],
-            )
-            header_table.setStyle(
-                TableStyle(
-                    [
-                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                        ("ALIGN", (1, 0), (1, 0), "RIGHT"),
-                        ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-                        ("TOPPADDING", (0, 0), (-1, -1), 0),
-                        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-                    ]
-                )
-            )
-
-            elements.append(header_table)
+            elements.append(self._photo_header_table(info_elements, photo_img, photo_position))
         else:
-            # Photo failed to load, use regular layout
+            # No photo requested, or it failed to load: text-only header
             elements.extend(info_elements)
 
         elements.append(Spacer(1, 4 * mm))
 
         return elements
+
+    def _photo_header_table(self, info_elements, photo_img, photo_position):
+        """Lay out the header info and photo side by side (photo right unless "left")"""
+        # Swiss CVs conventionally feature a larger, more prominent photo.
+        photo_col_width = 50 * mm if self.cv_type == "swiss" else 40 * mm
+        info_col_width = 170 * mm - photo_col_width
+        if photo_position == "left":
+            row = [photo_img, info_elements]
+            col_widths = [photo_col_width, info_col_width]
+            photo_col, photo_align = 0, "LEFT"
+        else:
+            row = [info_elements, photo_img]
+            col_widths = [info_col_width, photo_col_width]
+            photo_col, photo_align = 1, "RIGHT"
+
+        header_table = Table([row], colWidths=col_widths)
+        header_table.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("ALIGN", (photo_col, 0), (photo_col, 0), photo_align),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]
+            )
+        )
+        return header_table
 
     def _format_swiss_date(self, date_str):
         """Format a date string as dd.mm.yyyy (Swiss convention)

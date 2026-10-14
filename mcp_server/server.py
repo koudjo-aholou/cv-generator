@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
@@ -19,6 +19,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from mcp.server.fastmcp import FastMCP
 
+from mcp_server.core.cv_config_builder import PHOTO_POSITIONS
 from mcp_server.core.storage import StorageRepository
 from mcp_server.tools import generation_tools as gen_tools
 from mcp_server.tools import profile_tools as prof_tools
@@ -29,6 +30,8 @@ STORAGE_DIR = Path(os.environ.get("MCP_STORAGE_DIR", _REPO_ROOT / "mcp_server" /
 CV_OUTPUT_DIR = Path(os.environ.get("MCP_CV_OUTPUT_DIR", _REPO_ROOT / "cv"))
 
 _repo = StorageRepository(base_dir=STORAGE_DIR)
+
+PhotoPosition = Literal[PHOTO_POSITIONS]
 
 mcp = FastMCP("cv-generator")
 
@@ -127,8 +130,11 @@ def generate_cv_from_job(
     education_visible_indices: Optional[list] = None,
     colors: Optional[dict] = None,
     template: Optional[str] = None,
+    photo_position: Optional[PhotoPosition] = None,
 ) -> dict:
-    """Generate a tailored CV PDF for a job posting from the base profile."""
+    """Generate a tailored CV PDF for a job posting from the base profile.
+    `photo_position`: "left" (default), "right", or "none" for a CV without photo.
+    """
     return gen_tools.generate_cv_from_job(
         _repo,
         job_title=job_title,
@@ -140,6 +146,7 @@ def generate_cv_from_job(
         education_visible_indices=education_visible_indices,
         colors=colors,
         template=template,
+        photo_position=photo_position,
         cv_output_dir=CV_OUTPUT_DIR,
     )
 
@@ -156,6 +163,7 @@ def generate_custom_cv(
     education_visible_indices: Optional[list] = None,
     colors: Optional[dict] = None,
     template: Optional[str] = None,
+    photo_position: Optional[PhotoPosition] = None,
     job_id: Optional[str] = None,
 ) -> dict:
     """Generate a CV tailored to one posting: experiences in relevance order
@@ -164,6 +172,7 @@ def generate_custom_cv(
     Only descriptions can be reworded; titles, companies and dates stay locked
     to the base profile. Pass `job_id` to save as a new version of an existing
     job. See the `custom_cv_brief` prompt for how to prepare the inputs.
+    `photo_position`: "left" (default), "right", or "none" for a CV without photo.
     """
     return gen_tools.generate_custom_cv(
         _repo,
@@ -177,6 +186,7 @@ def generate_custom_cv(
         education_visible_indices=education_visible_indices,
         colors=colors,
         template=template,
+        photo_position=photo_position,
         job_id=job_id,
         cv_output_dir=CV_OUTPUT_DIR,
     )
@@ -189,8 +199,10 @@ def improve_cv_short(
     tailored_summary: Optional[str] = None,
     experience_selection: Optional[dict] = None,
     skills_selected: Optional[list] = None,
+    photo_position: Optional[PhotoPosition] = None,
 ) -> dict:
-    """Regenerate an existing CV job as the short variant with new deltas."""
+    """Regenerate an existing CV job as the short variant with new deltas.
+    `photo_position` defaults to the previous version's choice."""
     return gen_tools.improve_cv_short(
         _repo,
         job_id=job_id,
@@ -198,6 +210,7 @@ def improve_cv_short(
         tailored_summary=tailored_summary,
         experience_selection=experience_selection,
         skills_selected=skills_selected,
+        photo_position=photo_position,
         cv_output_dir=CV_OUTPUT_DIR,
     )
 
@@ -209,8 +222,10 @@ def improve_cv_long(
     tailored_summary: Optional[str] = None,
     experience_selection: Optional[dict] = None,
     skills_selected: Optional[list] = None,
+    photo_position: Optional[PhotoPosition] = None,
 ) -> dict:
-    """Regenerate an existing CV job as the long variant with new deltas."""
+    """Regenerate an existing CV job as the long variant with new deltas.
+    `photo_position` defaults to the previous version's choice."""
     return gen_tools.improve_cv_long(
         _repo,
         job_id=job_id,
@@ -218,6 +233,7 @@ def improve_cv_long(
         tailored_summary=tailored_summary,
         experience_selection=experience_selection,
         skills_selected=skills_selected,
+        photo_position=photo_position,
         cv_output_dir=CV_OUTPUT_DIR,
     )
 

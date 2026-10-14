@@ -82,6 +82,12 @@ def build_custom_config(overrides: dict, data: dict) -> dict:
     }
 
 
+PHOTO_POSITIONS = ("left", "right", "none")
+# CVGenerator itself falls back to "right" when the key is absent (web app
+# behaviour); the MCP layer deliberately prefers "left" for every variant.
+DEFAULT_PHOTO_POSITION = "left"
+BACKEND_PHOTO_POSITION = "right"
+
 VARIANT_BUILDERS = {
     "short": build_short_config,
     "long": build_long_config,
@@ -97,6 +103,12 @@ def build_config(variant: str, overrides: dict, data: dict) -> dict:
         )
 
     config = builder(overrides, data)
+    photo_position = overrides.get("photo_position") or DEFAULT_PHOTO_POSITION
+    if photo_position not in PHOTO_POSITIONS:
+        raise ValueError(
+            f"Unknown photo_position '{photo_position}'. Allowed: {list(PHOTO_POSITIONS)}"
+        )
+    config["photo_position"] = photo_position
 
     colors = overrides.get("colors")
     if colors:

@@ -258,6 +258,54 @@ class TestHeaderCreation:
         # Should include photo in header
         assert len(header_elements) > 0
 
+    @staticmethod
+    def _header_row(generator):
+        from reportlab.platypus import Table
+        table = next(e for e in generator._build_header() if isinstance(e, Table))
+        return table._cellvalues[0], table._colWidths
+
+    def test_photo_on_right_by_default(self, mock_parsed_data, mock_base64_image):
+        from reportlab.platypus import Image
+        data = mock_parsed_data.copy()
+        data['photo'] = f"data:image/png;base64,{mock_base64_image}"
+
+        row, widths = self._header_row(CVGenerator(data))
+
+        assert isinstance(row[1], Image)
+        assert widths[1] == 40 * mm
+
+    def test_photo_on_left_when_configured(self, mock_parsed_data, mock_base64_image):
+        from reportlab.platypus import Image
+        data = mock_parsed_data.copy()
+        data['photo'] = f"data:image/png;base64,{mock_base64_image}"
+
+        row, widths = self._header_row(CVGenerator(data, {"photo_position": "left"}))
+
+        assert isinstance(row[0], Image)
+        assert isinstance(row[1], list)
+        assert widths[0] == 40 * mm
+
+    def test_photo_position_none_renders_no_photo_nor_placeholder(self, mock_parsed_data, mock_base64_image):
+        from reportlab.platypus import Image, Table
+        data = mock_parsed_data.copy()
+        data['photo'] = f"data:image/png;base64,{mock_base64_image}"
+        generator = CVGenerator(data, {"photo_position": "none"})
+
+        with patch.object(generator, "_create_photo_image") as create_photo:
+            header = generator._build_header()
+
+        create_photo.assert_not_called()
+        assert not any(isinstance(e, (Table, Image)) for e in header)
+
+    def test_invalid_photo_position_falls_back_to_right(self, mock_parsed_data, mock_base64_image):
+        from reportlab.platypus import Image
+        data = mock_parsed_data.copy()
+        data['photo'] = f"data:image/png;base64,{mock_base64_image}"
+
+        row, _ = self._header_row(CVGenerator(data, {"photo_position": "center"}))
+
+        assert isinstance(row[1], Image)
+
 
 class TestSectionGeneration:
     """Test individual section generation."""
