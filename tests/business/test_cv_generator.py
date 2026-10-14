@@ -182,6 +182,15 @@ class TestPhotoHandling:
         assert pdf.getbuffer().nbytes > 0
 
 
+    def test_missing_photo_keeps_a_blank_space_not_a_silhouette(self, mock_parsed_data):
+        """Without a photo the column stays (layout unchanged) but is blank."""
+        data = mock_parsed_data.copy()
+        data.pop('photo', None)
+
+        placeholder = CVGenerator(data)._create_placeholder_avatar()
+
+        assert placeholder.getextrema() == ((255, 255), (255, 255), (255, 255))
+
     def test_photo_error_handling(self, mock_parsed_data):
         """Test that invalid photo data doesn't crash generation."""
         data = mock_parsed_data.copy()

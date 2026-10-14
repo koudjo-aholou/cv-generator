@@ -19,7 +19,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import base64
 import re
 from io import BytesIO
-from PIL import Image as PILImage, ImageDraw
+from PIL import Image as PILImage
 from datetime import datetime
 from xml.sax.saxutils import escape as xml_escape
 
@@ -1102,29 +1102,9 @@ class CVGenerator:
         return date_str
 
     def _create_placeholder_avatar(self):
-        """Generate a generic silhouette avatar used when no photo was provided"""
-        size = 400
-        bg_color = (225, 227, 230)
-        fg_color = (165, 170, 178)
-
-        pil_image = PILImage.new("RGB", (size, size), bg_color)
-        draw = ImageDraw.Draw(pil_image)
-
-        # Head
-        head_r = size * 0.17
-        cx, cy = size / 2, size * 0.36
-        draw.ellipse(
-            [cx - head_r, cy - head_r, cx + head_r, cy + head_r], fill=fg_color
-        )
-
-        # Shoulders
-        body_w = size * 0.64
-        draw.ellipse(
-            [size / 2 - body_w / 2, size * 0.62, size / 2 + body_w / 2, size * 1.2],
-            fill=fg_color,
-        )
-
-        return pil_image
+        """Blank square used when no photo was provided, so the header keeps
+        the photo column's width without drawing a generic silhouette."""
+        return PILImage.new("RGB", (400, 400), (255, 255, 255))
 
     def _create_photo_image(self):
         """Create photo image from base64 data (or a placeholder) with fixed square dimensions"""
