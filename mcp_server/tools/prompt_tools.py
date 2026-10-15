@@ -70,6 +70,8 @@ def custom_cv_brief(repo: StorageRepository, job_posting: str, company_research:
     if profile is None:
         return _NO_PROFILE_BRIEF
 
+    # The photo (base64) is useless to the LLM and was ~20% of the prompt.
+    profile = {key: value for key, value in profile.items() if key != "photo"}
     return _CUSTOM_CV_BRIEF.format(
         job_posting=job_posting,
         company_research=company_research,

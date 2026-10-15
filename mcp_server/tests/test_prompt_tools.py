@@ -41,3 +41,15 @@ def test_custom_cv_brief_without_base_profile_asks_for_one(tmp_path):
 
     assert "import_linkedin_csv" in text or "set_base_profile" in text
     assert "generate_custom_cv" not in text
+
+
+def test_custom_cv_brief_leaves_the_photo_out_of_the_prompt(tmp_path):
+    repo = StorageRepository(base_dir=tmp_path)
+    photo = "data:image/jpeg;base64," + "A" * 4000
+    repo.save_base_profile({**PROFILE, "photo": photo})
+
+    text = custom_cv_brief(repo, job_posting=POSTING, company_research=RESEARCH)
+
+    assert "base64" not in text and "A" * 100 not in text
+    assert json.dumps(PROFILE, indent=2, ensure_ascii=False) in text
+    assert repo.load_base_profile()["photo"] == photo          # profil stocké intact
